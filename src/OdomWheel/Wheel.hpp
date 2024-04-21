@@ -27,12 +27,18 @@ typedef struct {
 } WheelVector;
 
 
+typedef struct {
+    float kx; // x方向の速度への車輪の速度の寄与
+    float ky; // y方向の速度に対する車輪の速度の寄与
+    float ktheta; // 角速度に対する車輪の速度の寄与
+} WheelVectorInv;
+
 // 車輪の位置から車輪のベクトル(vx, vy, omegaそれぞれの係数)を計算する
 // 車輪の速度ベクトルが(vx, vy) + omega * (-wheel_y, wheel_x)で、これの車輪の方向(cos(theta), sin(theta))との内積を取り、そのvx, vy, omegaの係数を求める
 inline constexpr WheelVector getWheelVector(const WheelConfig wheel_config) {
     float wheel_circumference = 2 * (float)M_PI * wheel_config.wheel_radius;
-    float kx = cos(wheel_config.wheel_theta) * wheel_circumference;
-    float ky = sin(wheel_config.wheel_theta) * wheel_circumference;
+    float kx = cos(wheel_config.wheel_theta) / wheel_circumference;
+    float ky = sin(wheel_config.wheel_theta) / wheel_circumference;
     return WheelVector{
         kx: kx,
         ky: ky,

@@ -58,3 +58,13 @@ float Encoder::countToRotations(int count)
 {
     return (float)count / converted_resolution;
 }
+
+// カウント数を加算 (シミュレーション用)
+void Encoder::addCount(int count)
+{
+    this->count += count;
+}
+
+int Encoder::rotationsToCount(float rotations){
+    return (int)(rotations * converted_resolution);
+}

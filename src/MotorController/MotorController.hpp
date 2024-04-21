@@ -7,12 +7,13 @@
 
 class MotorController{
     public:
-        MotorController(DCMotor& motor, Encoder& encoder, PIDGain& pid_gain, float max_duty=1.0);
+        MotorController(DCMotor& motor, Encoder& encoder, PIDGain pid_gain, float max_duty=1.0);
         void setTargetSpeed(float target_rps);
         void stop();
 
         
         float getSpeed();
+        float getTargetSpeed();
 
     private:
         Ticker ticker;

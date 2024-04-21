@@ -8,13 +8,14 @@ class WheelControllerBase {
     public:
         WheelControllerBase() {}
         virtual void setTargetTwist(const Twist twist) = 0;
-
 };
 
 template <int N> // N: 車輪の数
 class WheelController {
 public:
-    WheelController(const std::array<WheelConfig, N>& wheel_configs, const std::array<MotorController*, N>& motors, float max_speed=1000) {
+    WheelController(const std::array<WheelConfig, N>& wheel_configs, const std::array<MotorController*, N>& motors, float max_speed=10000) 
+    : motors(motors)
+    {
         for (int i = 0; i < N; i++) {
             wheel_vectors[i] = getWheelVector(wheel_configs[i]);
         }
@@ -26,8 +27,7 @@ public:
         this->max_speed = max_speed;
     }
 
-    // ロボットの目標Twist(ロボット座標)を設定する。
-    void setTargetTwist(const Twist twist) {
+    std::array<float, N> twistToMotorSpeeds(const Twist twist){
         std::array<float, N> speeds;
         float dec_ratio = 1.0; // 速度の減衰比
 
@@ -41,6 +41,13 @@ public:
         for (int i = 0; i < N; i++) {
             speeds[i] = dec_ratio * speeds[i]; // 速度を減衰
         }
+
+        return speeds;
+    }
+
+    // ロボットの目標Twist(ロボット座標)を設定する。
+    void setTargetTwist(const Twist twist) {
+        auto speeds = twistToMotorSpeeds(twist);
 
         for (int i = 0; i < N; i++) {
             motors[i]->setTargetSpeed(speeds[i]); // モーターに速度を設定

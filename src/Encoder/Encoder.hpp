@@ -12,6 +12,9 @@ class Encoder {
         float countToRadians(int count);
         float countToDegrees(int count);
         float countToRotations(int count);
+        int rotationsToCount(float rotation);
+
+        void addCount(int count); // カウントを加算 (シミュレーション用)
         
     private:
         DigitalIn digital_in;

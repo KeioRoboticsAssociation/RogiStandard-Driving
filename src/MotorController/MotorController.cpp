@@ -1,6 +1,6 @@
 #include "MotorController.hpp"
 
-MotorController::MotorController(DCMotor& motor, Encoder& encoder, PIDGain& pid_gain, float max_duty)
+MotorController::MotorController(DCMotor& motor, Encoder& encoder, PIDGain pid_gain, float max_duty)
     : motor(motor), encoder(encoder), pid_controller(pid_gain)
 {
     ticker.attach(callback(this, &MotorController::loop), 1000ms / pid_controller.getFrequency());
@@ -41,6 +41,10 @@ void MotorController::stop()
 float MotorController::getSpeed()
 {
     return current_rps;
+}
+
+float MotorController::getTargetSpeed(){
+    return this->target_rps;
 }
 
 
