@@ -19,7 +19,7 @@
 
 ## 駆動輪・オドメトリ
 
-[BNO055](src/BNO055/README.md)
+[BNO055](src/OdomWheel/README.md)
 
 
 
