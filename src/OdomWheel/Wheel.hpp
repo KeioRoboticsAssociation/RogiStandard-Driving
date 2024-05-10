@@ -11,6 +11,7 @@ typedef struct {
     float vx; // 速度(x [rps])
     float vy; // 速度(y [rps])
     float omega; // 角速度(rad/s)
+
 } Twist;
 
 typedef struct {
@@ -32,6 +33,10 @@ typedef struct {
     float ky; // y方向の速度に対する車輪の速度の寄与
     float ktheta; // 角速度に対する車輪の速度の寄与
 } WheelVectorInv;
+
+inline constexpr float radiansMod(float value, float min=-M_PI, float max=M_PI) {
+    return fmod(fmod(value + min, max - min) + max - min, max - min) + min;
+}
 
 // 車輪の位置から車輪のベクトル(vx, vy, omegaそれぞれの係数)を計算する
 // 車輪の速度ベクトルが(vx, vy) + omega * (-wheel_y, wheel_x)で、これの車輪の方向(cos(theta), sin(theta))との内積を取り、そのvx, vy, omegaの係数を求める

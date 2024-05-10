@@ -21,6 +21,7 @@ class Odometry {
             ticker.attach(callback(this, &Odometry::update), update_interval); // オドメトリの更新周期を設定
             setPose({0.0, 0.0, 0.0});
             last_encoder_counts.fill(0);
+            this->update_interval = update_interval;
         }
 
         static std::array<WheelVectorInv, N> getWheelVectorInv(const std::array<WheelConfig, N>& wheel_configs) {
@@ -84,6 +85,10 @@ class Odometry {
 
         int DEBUG_ = 0;
 
+        std::chrono::microseconds getUpdateInterval() {
+            return update_interval;
+        }
+
         
 
 
@@ -93,6 +98,8 @@ class Odometry {
         std::array<WheelVectorInv, N> wheel_vectors_inv;
         Pose pose;
         Ticker ticker;
+
+        std::chrono::microseconds update_interval;
 
         void updatePose(float delta_x, float delta_y, float delta_theta) {
             // ロボット座標系からフィールド座標系への変換を含む位置と姿勢の更新
@@ -104,6 +111,9 @@ class Odometry {
             pose.theta += delta_theta;
         }
 };
+
+typedef Odometry<3> ThreeWheelOdometry;
+typedef Odometry<4> FourWheelOdometry;
 
 #pragma GCC diagnostic pop
 

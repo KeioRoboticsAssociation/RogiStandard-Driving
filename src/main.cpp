@@ -1,4 +1,4 @@
-#if 1
+#if 0
 #include <mbed.h>
 #include "Encoder/Encoder.hpp"
 #include "OdomWheel/Odometry.hpp"
@@ -94,3 +94,69 @@ int main() {
 #endif
 
 
+#include <mbed.h>
+#include "Encoder/Encoder.hpp"
+#include "OdomWheel/Odometry.hpp"
+#include "OdomWheel/WheelController.hpp"
+#include "DCMotor/DCMotor.hpp"
+#include "pins.hpp"
+#include "Simulator/MotorSimulator.hpp"
+#include "OdomWheel/OdomWheel.hpp"
+
+// Encoder encoder1(InterruptInPins::MEASURING_ENCODER1_A, DigitalInPins::MEASURING_ENCODER1_B, 2048, 1, false);
+Encoder encoder2(InterruptInPins::MEASURING_ENCODER2_A, DigitalInPins::MEASURING_ENCODER2_B, 2048,1, false);
+// Encoder encoder3(InterruptInPins::MEASURING_ENCODER3_A, DigitalInPins::MEASURING_ENCODER3_B, 2048, 0, false);
+
+// DCMotor dc1(PwmOutPins::MOTOR1_PWM, DigitalOutPins::MOTOR1_DIR, 0);
+DCMotor dc2(PwmOutPins::MOTOR2_PWM, DigitalOutPins::MOTOR2_DIR, 0);
+// DCMotor dc3(PwmOutPins::MOTOR3_PWM, DigitalOutPins::MOTOR3_DIR, 0);
+
+// MotorController motor1(dc1, encoder1, PIDGain({0.1, 0.0, 0, 100}));
+MotorController motor2(dc2, encoder2, PIDGain({1.5, 0.1, 0, 20}));
+// MotorController motor3(dc3, encoder3, PIDGain({0.001, 0, 0, 20}));
+
+// float WHEEL_RAD = 100.0;
+// float TREAD_RAD = 100.0;
+
+
+// OdomWheel<3> odom_wheel(
+//     {
+//         WheelConfig{
+//             .wheel_radius = WHEEL_RAD, 
+//             .wheel_x = 0.0, 
+//             .wheel_y = TREAD_RAD, 
+//             .wheel_theta = M_PI
+//         }, 
+//         WheelConfig{
+//             .wheel_radius = WHEEL_RAD, 
+//             .wheel_x = - M_SQRT3 / 2 * TREAD_RAD,
+//             .wheel_y = - 0.5 * TREAD_RAD, 
+//             .wheel_theta = 5 * M_PI / 3
+//         }, 
+//         WheelConfig{
+//             .wheel_radius = WHEEL_RAD, 
+//             .wheel_x = + M_SQRT3 / 2 * TREAD_RAD, 
+//             .wheel_y = - 0.5 * TREAD_RAD,
+//             .wheel_theta = M_PI / 3
+//         }
+//     },
+//     {&motor1, &motor2, &motor3}, 
+//     {&encoder1, &encoder2, &encoder3}
+// );
+
+
+int main() {
+    MotorController& motor = motor2;
+
+    motor.setTargetSpeed(1.0);
+    
+    // odom_wheel.controller.setTargetTwist({100.0, 0.0, 0.0});
+    // odom_wheel.odometry.setPose({0.0,0.0,0.0});
+    
+
+    while (1) {
+        ThisThread::sleep_for(3ms);
+        printf("%d\n", int(motor.getSpeed() * 1000));
+        //printf("%d\n", int(motor.encoder.getRotations() * 360));
+    }
+}

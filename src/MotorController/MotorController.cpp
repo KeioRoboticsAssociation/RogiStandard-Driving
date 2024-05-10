@@ -16,16 +16,22 @@ void MotorController::loop()
 
     // PID制御
     float output = pid_controller.calculate(target_rps - current_rps);
+    float duty = last_duty + output / pid_controller.getFrequency();
+    //float duty = output;
+
     // デューティ比の制限
-    if (output > max_duty) {
-        output = max_duty;
+    if (duty > max_duty) {
+        duty = max_duty;
         pid_controller.reset(); //最大速度に達したら積分をリセット
-    } else if (output < -max_duty) {
-        output = -max_duty;
+    } else if (duty < -max_duty) {
+        duty = -max_duty;
         pid_controller.reset(); //最大速度に達したら積分をリセット
     }
+
+    last_duty = duty;
+
     // モーターへの出力
-    motor.setDuty(output);
+    motor.setDuty(duty);
 }
 
 void MotorController::setTargetSpeed(float target_rps)
@@ -35,7 +41,8 @@ void MotorController::setTargetSpeed(float target_rps)
 
 void MotorController::stop()
 {
-    motor.setDuty(0);
+    this->target_rps = 0;
+    pid_controller.reset();
 }
 
 float MotorController::getSpeed()

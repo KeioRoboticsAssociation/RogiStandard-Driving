@@ -165,7 +165,7 @@
                 ]
             },
             "defines": [
-                "PLATFORMIO=60114",
+                "PLATFORMIO=60115",
                 "STM32F446xx",
                 "ARM_MATH_CM4",
                 "COMPONENT_FLASHIAP=1",

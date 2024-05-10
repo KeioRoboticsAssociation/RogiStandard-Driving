@@ -15,18 +15,21 @@ class MotorController{
         float getSpeed();
         float getTargetSpeed();
 
-    private:
-        Ticker ticker;
-
         DCMotor& motor;
         Encoder& encoder;
         PIDController pid_controller;
 
+    private:
+        Ticker ticker;
+        
+
         float target_rps = 0;
         float current_rps = 0;
         float last_position = 0;
+        float last_duty = 0;
 
         float max_duty;
+        
 
         void loop();
 };
