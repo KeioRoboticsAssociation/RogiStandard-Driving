@@ -7,7 +7,7 @@
 
 class MotorController{
     public:
-        MotorController(DCMotor& motor, Encoder& encoder, PIDGain pid_gain, float max_duty=1.0);
+        MotorController(DCMotor& motor, Encoder& encoder, PIDGain pid_gain=PIDGain{0.13, 0.0, 0.0, 20}, float max_duty=1.0);
         void setTargetSpeed(float target_rps);
         void stop();
 
@@ -29,6 +29,8 @@ class MotorController{
         float last_duty = 0;
 
         float max_duty;
+
+        bool moving = false;
         
 
         void loop();

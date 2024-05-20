@@ -9,6 +9,10 @@ MotorController::MotorController(DCMotor& motor, Encoder& encoder, PIDGain pid_g
 
 void MotorController::loop()
 {
+    if (!moving) {
+        return;
+    }
+
     // 速度の更新
     float current_position = encoder.getRotations(); //現在の位置を取得
     current_rps = (current_position - last_position) * pid_controller.getFrequency(); //現在の速度を取得
@@ -36,6 +40,7 @@ void MotorController::loop()
 
 void MotorController::setTargetSpeed(float target_rps)
 {
+    this->moving = true;
     this->target_rps = target_rps;
 }
 
@@ -43,6 +48,8 @@ void MotorController::stop()
 {
     this->target_rps = 0;
     pid_controller.reset();
+    moving = false;
+    motor.setDuty(0);
 }
 
 float MotorController::getSpeed()
