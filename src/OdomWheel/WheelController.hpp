@@ -53,6 +53,7 @@ public:
             motors[i]->setTargetSpeed(speeds[i]); // モーターに速度を設定
         }
     }
+    
 
 private:
     std::array<WheelVector, N> wheel_vectors;
