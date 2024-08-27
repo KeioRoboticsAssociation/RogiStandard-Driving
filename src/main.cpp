@@ -53,11 +53,14 @@ std::array<WheelConfig, 3> config = {
 // オドメトリとホイールコントローラの設定
 Odometry<3> odometry(config, {&encoder_FL, &encoder_FR, &encoder_BL});
 WheelController<3> controller(config, {&motor1, &motor2, &motor3});
-PIDController robot_pause_pid(1.0,0.0,0.0,20);
+PIDController robot_pause_pid(0.2,0.0,0.0,20);
 Timer timer;
 Ticker ticker;
 
-void robot_twist(float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta) { 
+float last_time;
+float vx, vy;
+
+void robot_twist(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta) { 
     // target_x単位はmm
     // kp1, kd,ki 0.01くらい
 
@@ -78,10 +81,12 @@ void robot_twist(float accx, float accy, float last_x, float last_y, float targe
         printf("1st\n");
         float current_time = timer.read();
         printf("current_time = %d\n", (int)current_time);
-        float vx = accx*current_time;
-        float vy = accy*current_time;
+        vx = accx*(current_time);
+        vy = accy*(current_time);
+
+        last_time = current_time;
         controller.setTargetTwist({vx, vy, 0});
-    } else if (10 < x < middle_x || 10 < y < middle_y) {
+    } else if (10 < x < middle_x || 10 < y < middle_y ) {
         printf("2nd\n");
         float current_time = timer.read();
         printf("current_time = %d\n", (int)current_time);
@@ -97,7 +102,7 @@ Pose current_pose;
 bool is_moivng = false;
 
 void forward_1700() {
-    robot_twist(0, 7.0, 0,0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(2.0, 0, 2.0, 0, 0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void stop_30() {
     // is_moving = false;
@@ -107,24 +112,24 @@ void stop_30() {
 }
 void backward_500() {
     // is_moving = true;
-    robot_twist(0, 5.0, 0, 1700, 0, 1700-500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(10,0, 3.0, 0, 1700, 0, 1700-500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void left_650() {
-    robot_twist(-7.0, 0, 0,1700-500, -650, 1700-500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(2,-7.0, 0, 0,1700-500, -650, 1700-500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void forward_500() {
-    robot_twist(0, 7.0, -650, 1700-500, -650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(10,0, 7.0, -650, 1700-500, -650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void backward_750() {
     // is_moving = true;
-    robot_twist(0, 7.0, -650, 1700, -650, 1700-750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(2,0, 7.0, -650, 1700, -650, 1700-750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void rotate_90_CW() {
     // ロボット座標系で上から見て時計回り90度回転は-90度回転
-    robot_twist(0, 0, -650, 1700-750, -650, 1700-750, -90, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(2,0, 0, -650, 1700-750, -650, 1700-750, -90, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void left_950() {
-    robot_twist(7.0, 0, -650, 1700-750, -650-950, 1700-950, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(2,7.0, 0, -650, 1700-750, -650-950, 1700-950, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 
 int main() {
@@ -141,24 +146,24 @@ int main() {
         printf("difference_x = %d, difference_y = %d, difference_theta = %d\n", (int)current_pose.x, 1700-(int)current_pose.y, (int)current_pose.theta);
 
         float current_time = timer.read();
-        float first_time = 17;
-
-        if (current_time <= first_time) {
-            backward_500();
+        float first_time = 30;
+        robot_twist(2.0, 0, 3.0, 0, 0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        /*if (current_time <= first_time) {
+            forward_1700();
             printf("current_time = %d\n", (int)current_time);
-        } else if (first_time <= current_time <= first_time+30) {
+        } else if (first_time < current_time <= first_time+30) {
             stop_30();
             printf("current_time = %d\n", (int)current_time);
-        } else if (first_time+30 <= current_time <= first_time+30+5) {
+        } else if (first_time+30 < current_time <= first_time+30+5) {
             backward_500();
             printf("current_time = %d\n", (int)current_time);
-        } else if (first_time+30+5 <= current_time <= first_time+30+5+6.5) {
+        } else if (first_time+30+5 < current_time <= first_time+30+5+6.5) {
             left_650();
             printf("current_time = %d\n", (int)current_time);
-        } else if (first_time+30+5+6.5 <= current_time+30+5+6.5+5) {
+        } else if (first_time+30+5+6.5 < current_time+30+5+6.5+5) {
             forward_500();
             printf("current_time = %d\n", (int)current_time);
-        } else if (first_time+30+5+6.5+5 <= current_time+30+5+6.5+5+30) {
+        } else if (first_time+30+5+6.5+5 < current_time+30+5+6.5+5+30) {
             stop_30();
             printf("current_time = %d\n", (int)current_time);
         } else if (first_time+30+5+6.5+5+30 <= current_time+30+5+6.5+5+30+7.5) {
@@ -173,7 +178,7 @@ int main() {
             motor1.stop();
             motor2.stop();
             motor3.stop();
-        }
+        }*/
         // ticker.attach(forward_1700, 30000);
         // ticker.attach(stop_30, 30000);
         // ticker.attach(backward_500, 3000);
