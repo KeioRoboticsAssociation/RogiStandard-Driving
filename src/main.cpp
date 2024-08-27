@@ -60,6 +60,27 @@ Ticker ticker;
 float last_time;
 float vx, vy;
 
+enum class Mode {
+    FORWARD_1700,
+    STOP_30_1,
+    BACKWARD_500,
+    LEFT_650,
+    FORWARD_500, 
+    STOP_30_2,
+    BACKWARD_750,
+    ROTATE,
+    LEFT_950,
+    STOP
+};
+
+Mode currentMode;
+float distanceErrorx = 0.0;
+float distanceErrory = 0.0;
+float distanceErrortheta = 0.0;
+float threshold = 5.0;
+float targetDistance = 1700;
+float targetAngle;
+
 void robot_twist(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta) { 
     // target_x単位はmm
     // kp1, kd,ki 0.01くらい
@@ -99,7 +120,6 @@ void robot_twist(float max_v, float accx, float accy, float last_x, float last_y
 }
 
 Pose current_pose;
-bool is_moivng = false;
 
 void forward_1700() {
     robot_twist(2.0, 0, 2.0, 0, 0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
@@ -109,28 +129,120 @@ void stop_30() {
     motor1.stop();
     motor2.stop();
     motor3.stop();
+    wait_us(30000);
 }
 void backward_500() {
     // is_moving = true;
-    robot_twist(10,0, 3.0, 0, 1700, 0, 1700-500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(10,0, 2.0, 0, 1700, 0, 1700-500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void left_650() {
-    robot_twist(2,-7.0, 0, 0,1700-500, -650, 1700-500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(10,-2.0, 0, 0,1700-500, -650, 1700-500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void forward_500() {
-    robot_twist(10,0, 7.0, -650, 1700-500, -650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(10,0, 2.0, -650, 1700-500, -650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void backward_750() {
     // is_moving = true;
-    robot_twist(2,0, 7.0, -650, 1700, -650, 1700-750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(10,0, 2.0, -650, 1700, -650, 1700-750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void rotate_90_CW() {
     // ロボット座標系で上から見て時計回り90度回転は-90度回転
-    robot_twist(2,0, 0, -650, 1700-750, -650, 1700-750, -90, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist(10,0, 0, -650, 1700-750, -650, 1700-750, -90, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void left_950() {
     robot_twist(2,7.0, 0, -650, 1700-750, -650-950, 1700-950, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
+void stop() {
+    motor1.stop();
+    motor2.stop();
+    motor3.stop();
+}
+
+void update() {
+    // 誤差の計算
+    distanceErrorx = targetDistance - current_pose.x;
+    distanceErrory = targetDistance - current_pose.y;
+    distanceErrortheta = targetDistance - current_pose.theta;
+
+    // アクションの切り替え
+    if (abs(distanceErrorx) <= threshold && abs(distanceErrory) <= threshold) {
+        switch (currentMode) {
+            case Mode::FORWARD_1700:
+                    currentMode = Mode::STOP_30_1;
+
+                    break;
+                case Mode::STOP_30_1:
+                    currentMode = Mode::BACKWARD_500;
+                    targetDistance = 500;
+                    break;
+                case Mode::BACKWARD_500:
+                    currentMode = Mode::LEFT_650;
+                    targetDistance = 650;
+                    break;
+                case Mode::LEFT_650:
+                    currentMode = Mode::FORWARD_500;
+                    targetDistance = 500;
+                    break;
+                case Mode::FORWARD_500:
+                    currentMode = Mode::STOP_30_2;
+                    break;
+                case Mode::STOP_30_2:
+                    currentMode = Mode::BACKWARD_750;
+                    targetDistance = 750;
+                    break;
+                case Mode::BACKWARD_750:
+                    currentMode = Mode::ROTATE;
+                    targetDistance = 90;
+                    break;
+                case Mode::ROTATE:
+                    currentMode = Mode::LEFT_950;
+                    targetDistance = 950;
+                    break;
+                case Mode::LEFT_950:
+                    currentMode = Mode::STOP;
+                    break;
+                case Mode::STOP:
+                    // 何もしない
+                    break;
+            }
+        }
+
+        // 各モードの処理
+        switch (currentMode) {
+            case Mode::FORWARD_1700:
+                forward_1700();
+                break;
+            case Mode::STOP_30_1:
+                stop_30();
+                break;
+            case Mode::BACKWARD_500:
+                backward_500();
+                break;
+            case Mode::LEFT_650:
+                left_650();
+                break;
+            case Mode::FORWARD_500:
+                forward_500();
+                break;
+            case Mode::STOP_30_2:
+                stop_30();
+                break;
+            case Mode::BACKWARD_750:
+                backward_750();
+                break;
+            case Mode::ROTATE:
+                rotate_90_CW();
+                break;
+            case Mode::LEFT_950:
+                left_950();
+                break;
+            case Mode::STOP:
+                stop();
+                break;
+    }
+}
+
+bool is_moivng = false;
 
 int main() {
     // wait_us(3000);
@@ -147,38 +259,9 @@ int main() {
 
         float current_time = timer.read();
         float first_time = 30;
-        robot_twist(2.0, 0, 3.0, 0, 0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
-        /*if (current_time <= first_time) {
-            forward_1700();
-            printf("current_time = %d\n", (int)current_time);
-        } else if (first_time < current_time <= first_time+30) {
-            stop_30();
-            printf("current_time = %d\n", (int)current_time);
-        } else if (first_time+30 < current_time <= first_time+30+5) {
-            backward_500();
-            printf("current_time = %d\n", (int)current_time);
-        } else if (first_time+30+5 < current_time <= first_time+30+5+6.5) {
-            left_650();
-            printf("current_time = %d\n", (int)current_time);
-        } else if (first_time+30+5+6.5 < current_time+30+5+6.5+5) {
-            forward_500();
-            printf("current_time = %d\n", (int)current_time);
-        } else if (first_time+30+5+6.5+5 < current_time+30+5+6.5+5+30) {
-            stop_30();
-            printf("current_time = %d\n", (int)current_time);
-        } else if (first_time+30+5+6.5+5+30 <= current_time+30+5+6.5+5+30+7.5) {
-            backward_750();
-            printf("current_time = %d\n", (int)current_time);
-        } else if (first_time+30+5+6.5+5+30+7.5 <= current_time+30+5+6.5+5+30+7.5+4) {
-            rotate_90_CW();
-            printf("current_time = %d\n", (int)current_time);
-        } else if (first_time+30+5+6.5+5+30+7.5+4 <= current_time+30+5+6.5+5+30+7.5+4+9.5) {
-            left_950();
-        } else {
-            motor1.stop();
-            motor2.stop();
-            motor3.stop();
-        }*/
+
+        update();
+        
         // ticker.attach(forward_1700, 30000);
         // ticker.attach(stop_30, 30000);
         // ticker.attach(backward_500, 3000);
@@ -191,33 +274,8 @@ int main() {
         // robot_twist(0, 7.0, 0,0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         wait_us(5000);
 
-            // bool is_moving = false;
-            // motor1.stop();
-            // motor2.stop();
-            // motor3.stop();
-            // wait_us(10000);
-            
-            // is_moving = true;
-            // robot_twist(0, 0.3, 0, 1700-500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
-        
-            // robot_twist(-0.5, 0, -650, 1700-500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
-            
-            // robot_twist(0, 0.3, -650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
-            
-            // is_moving = false;
-            // motor1.stop();
-            // motor2.stop();
-            // motor3.stop();
-            // wait_us(10000);
-
-            // is_moving = true;
-            // robot_twist(0, 0.5, -650, 1700-750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
-
-            // // 機体が回転したときにロボット座標系がフィールド座標系に対して回転することに注意？
-            // // ロボット座標系で上から見て時計回り90度回転は-90度回転
-            // robot_twist(0, 0, -650, 1700-750, -90, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
-            
-            // robot_twist(0.5, 0, -650-950, 1700-950, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        // // 機体が回転したときにロボット座標系がフィールド座標系に対して回転することに注意？
+        // // ロボット座標系で上から見て時計回り90度回転は-90度回転
             
     }
     
