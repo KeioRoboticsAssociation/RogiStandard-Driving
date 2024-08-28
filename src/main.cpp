@@ -28,10 +28,10 @@ MotorController motor1(dc1, encoder_FL, {0.16, 0.01, 0.01, 20});
 MotorController motor2(dc2, encoder_FR, {0.16, 0.01, 0.01, 20});
 MotorController motor3(dc3, encoder_BL, {0.16, 0.01, 0.01, 20});
 
-WTT12L rightlaser(AnalogInPins::RIGHT_WTT12L);
-WTT12L backlaser(AnalogInPins::BACK_WTT12L);
+// WTT12L rightlaser(AnalogInPins::RIGHT_WTT12L);
+// WTT12L backlaser(AnalogInPins::BACK_WTT12L);
 
-BNO055 gyrosensor(ConsolePins::CONSOLE_TX, ConsolePins::CONSOLE_RX);
+// BNO055 gyrosensor(ConsolePins::CONSOLE_TX, ConsolePins::CONSOLE_RX);
 
 // オムニホイールの配置を設定
 float WHEEL_RAD = 100.0; // 車輪の半径
@@ -57,7 +57,7 @@ std::array<WheelConfig, 3> config = {
 // オドメトリとホイールコントローラの設定
 Odometry<3> odometry(config, {&encoder_FL, &encoder_FR, &encoder_BL});
 WheelController<3> controller(config, {&motor1, &motor2, &motor3});
-PIDController robot_pause_pid(0.2, 0.0, 0.0, 20);
+PIDController robot_pause_pid(0.7, 0.0, 0.0, 20);
 Timer timer;
 Ticker ticker;
 
@@ -86,13 +86,13 @@ float threshold = 5.0;
 float targetDifference = 1700;
 float targetAngle;
 
-void robot_twist(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
+Pose current_pose;
+
+void robot_twist_up(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
 {
     // target_x単位はmm
     // kp1, kd,ki 0.01くらい
 
-    float middle_x = (target_x + last_x) / 2;
-    float middle_y = (target_y + last_y) / 2;
     float rotations_FL = encoder_FL.getRotations();
     float rotations_FR = encoder_FR.getRotations();
     float rotations_BL = encoder_BL.getRotations();
@@ -104,7 +104,7 @@ void robot_twist(float max_v, float accx, float accy, float last_x, float last_y
     float current_position_x = (fl + fr + bl) / 3.0f;
     float current_position_y = (fl + fr + bl) / 3.0f;
 
-    if (x <= middle_x && y <= middle_y) {
+    if ((-10 < (x-last_x) < (target_x-x)) && (-10 < (y-last_y) <= (target_y-y))) {
         printf("1st\n");
         float current_time = timer.read();
         printf("current_time = %d\n", (int)current_time);
@@ -113,84 +113,111 @@ void robot_twist(float max_v, float accx, float accy, float last_x, float last_y
 
         last_time = current_time;
         controller.setTargetTwist({vx, vy, 0});
-    } else if (10 < x < middle_x || 10 < y < middle_y) {
+    } else if ((0 < (target_x-x) < (x-last_x)) && (0 < (target_y-y) < (y-last_y))) {
         printf("2nd\n");
         float current_time = timer.read();
         printf("current_time = %d\n", (int)current_time);
         controller.setTargetTwist({robot_pause_pid.calculate(target_x - y), robot_pause_pid.calculate(target_y - y), robot_pause_pid.calculate(target_theta - theta)});
     } else {
+        printf("3rd\n");
         motor1.stop();
         motor2.stop();
         motor3.stop();
     }
 }
+void robot_twist_down(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
+{
+    float rotations_FL = encoder_FL.getRotations();
+    float rotations_FR = encoder_FR.getRotations();
+    float rotations_BL = encoder_BL.getRotations();
 
-Pose current_pose;
+    float fl = rotations_FL * 2.0f * PI * WHEEL_RADIUS;
+    float fr = rotations_FR * 2.0f * PI * WHEEL_RADIUS;
+    float bl = rotations_BL * 2.0f * PI * WHEEL_RADIUS;
 
+    float current_position_x = (fl + fr + bl) / 3.0f;
+    float current_position_y = (fl + fr + bl) / 3.0f;
+
+    if ((-10 < (last_x-x) < (x-target_x)) && (-10 < (last_y-y) <= (y-target_y))) {
+        printf("1st\n");
+        float current_time = timer.read();
+        printf("current_time = %d\n", (int)current_time);
+        vx = accx * (current_time);
+        vy = accy * (current_time);
+
+        last_time = current_time;
+        controller.setTargetTwist({vx, vy, 0});
+    } else if ((0 < (x-target_x) < (last_x-x)) && (0 < (y-target_y) < (last_y-y))) {
+        printf("2nd\n");
+        float current_time = timer.read();
+        printf("current_time = %d\n", (int)current_time);
+        controller.setTargetTwist({robot_pause_pid.calculate(target_x - y), robot_pause_pid.calculate(target_y - y), robot_pause_pid.calculate(target_theta - theta)});
+    } else {
+        printf("3rd\n");
+        controller.setTargetTwist({0,0,0});
+    }
+}
 void forward_1700()
 {
-    gyrosensor.setRadians(0);
-    robot_twist(10.0, 0, 3.0, 0, 0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    // gyrosensor.setRadians(0);
+    robot_twist_up(10.0, 0, 10.0, 0, 0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void scanRight() {
-    bool ifclose = rightlaser.whetherclose(0.075); // 75mm
-    if (ifclose) {
-        return;
-    } else {
+    // bool isclose = rightlaser.whetherclose(0.075); // 75mm
+    // if (!isclose) {
         controller.setTargetTwist({robot_pause_pid.calculate(0.05), 0, 0});
-        return;
-    }
+    // } else {
+    //     return;
+    // }
     wait_us(2000);
 }
 void stop_30()
 {
     // is_moving = false;
-    motor1.stop();
-    motor2.stop();
-    motor3.stop();
+    controller.setTargetTwist({0,0,0});
     wait_us(30000);
 }
 void backward_500()
 {
     // is_moving = true;
-    gyrosensor.setRadians(0);
-    robot_twist(10, 0, 3.0, 0, 1700, 0, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
+    // gyrosensor.setRadians(0);
+    robot_twist_up(10, 0, 3.0, 0, 1700, 0, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void left_650()
 {
-    gyrosensor.setRadians(0);
-    robot_twist(10, -3.0, 0, 0, 1700 - 500, -650, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
+    // gyrosensor.setRadians(0);
+    robot_twist_up(10, -3.0, 0, 0, 1700 - 500, -650, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void forward_500()
 {
-    gyrosensor.setRadians(0);
-    robot_twist(10, 0, 3.0, -650, 1700 - 500, -650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
+    // gyrosensor.setRadians(0);
+    robot_twist_up(10, 0, 3.0, -650, 1700 - 500, -650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void backward_750()
 {
     // is_moving = true;
-    gyrosensor.setRadians(0);
-    robot_twist(10, 0, 3.0, -650, 1700, -650, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
+    // gyrosensor.setRadians(0);
+    robot_twist_up(10, 0, 3.0, -650, 1700, -650, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void scanBack()
 {
-    bool ifclose = backlaser.whetherclose(0.95); // 950mm
-    if (ifclose) {
-        return;
-    } else {
-        
-    }
+    // bool ifclose = backlaser.whetherclose(0.95); // 950mm
+    // if (!ifclose) {
+    //     return;
+    // } else {
+
+    // }
 }
 void rotate_90_CW()
 {
     // ロボット座標系で上から見て時計回り90度回転は-90度回転
-    gyrosensor.setRadians(- M_PI/2);
-    robot_twist(10, 0, 0, -650, 1700 - 750, -650, 1700 - 750, -M_PI/2, (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
+    // gyrosensor.setRadians(- M_PI/2);
+    robot_twist_up(10, 0, 0, -650, 1700 - 750, -650, 1700 - 750, -M_PI/2, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void left_950()
 {
-    gyrosensor.setRadians(0);
-    robot_twist(10, 3.0, 0, -650, 1700 - 750, -650 - 950, 1700 - 950, 0, (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
+    // gyrosensor.setRadians(0);
+    robot_twist_up(10, 3.0, 0, -650, 1700 - 750, -650 - 950, 1700 - 950, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void stop()
 {
@@ -213,7 +240,6 @@ void update()
         {
         case Mode::FORWARD_1700:
             currentMode = Mode::STOP_30_1;
-
             break;
         case Mode::STOP_30_1:
             currentMode = Mode::BACKWARD_500;
@@ -258,8 +284,8 @@ void update()
         forward_1700();
         break;
     case Mode::STOP_30_1:
-        scanRight();
-        stop_30();
+        // scanRight();
+        backward_500();
         break;
     case Mode::BACKWARD_500:
         backward_500();
@@ -271,18 +297,18 @@ void update()
         forward_500();
         break;
     case Mode::STOP_30_2:
-        scanRight();
+        // scanRight();
         stop_30();
         break;
     case Mode::BACKWARD_750:
         backward_750();
         break;
     case Mode::ROTATE:
-        scanBack();
+        // scanBack();
         rotate_90_CW();
         break;
     case Mode::LEFT_950:
-        gyrosensor.reset();
+        // gyrosensor.reset();
         left_950();
         break;
     case Mode::STOP:
@@ -304,12 +330,12 @@ int main()
     {
         printf("Hello\n");
         current_pose = odometry.getPose();
-        printf("pos: %d, %d, %d\n", (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
+        printf("pos: %d, %d, %d\n", (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         printf("difference_x = %d, difference_y = %d, difference_theta = %d\n", (int)current_pose.x, 1700 - (int)current_pose.y, (int)current_pose.theta);
 
         float current_time = timer.read();
 
-        gyrosensor.getDegrees();
+        // gyrosensor.getDegrees();
         update();
 
         // ticker.attach(forward_1700, 30000);
@@ -321,8 +347,8 @@ int main()
         // ticker.attach(backward_750, 5000);
         // ticker.attach(left_950, 6000);
 
-        // robot_twist(0, 7.0, 0,0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
-        wait_us(5000);
+        // robot_twist(100,0, 7.0, 0,0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        // wait_us(5000);
 
         // // 機体が回転したときにロボット座標系がフィールド座標系に対して回転することに注意？
         // // ロボット座標系で上から見て時計回り90度回転は-90度回転

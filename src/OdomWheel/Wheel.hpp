@@ -8,8 +8,8 @@ typedef struct {
 } Pose;
 
 typedef struct {
-    float vx; // 速度(x [rps])
-    float vy; // 速度(y [rps])
+    float vx; // 速度(x [rps]) 回転毎秒
+    float vy; // 速度(y [rps]) 回転毎秒
     float omega; // 角速度(rad/s)
 
 } Twist;
