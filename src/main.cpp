@@ -162,7 +162,7 @@ void backward_500()
 {
     // is_moving = true;
     // gyrosensor.setRadians(0);
-    robot_twist_up(10, 0, acc, 0, 1700, 0, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist_down(10, 0, acc, 0, 1700, 0, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void left_650()
 {
@@ -178,7 +178,7 @@ void backward_750()
 {
     // is_moving = true;
     // gyrosensor.setRadians(0);
-    robot_twist_up(10, 0, acc, -650, 1700, -650, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist_down(10, 0, acc, -650, 1700, -650, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void scanBack()
 {
