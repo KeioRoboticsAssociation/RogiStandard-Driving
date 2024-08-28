@@ -36,12 +36,19 @@ namespace InterruptInPins
 
 namespace AnalogInPins
 {
-    
+    constexpr PinName RIGHT_WTT12L = PA_7;
+    constexpr PinName BACK_WTT12L = PA_8;
 }
 
 namespace AnalogOutPins
 {
     
+}
+
+namespace ConsolePins
+{
+    constexpr PinName CONSOLE_TX = PB_1;
+    constexpr PinName CONSOLE_RX = PB_2;
 }
 
 namespace UartPins
