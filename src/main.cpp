@@ -64,28 +64,6 @@ Ticker ticker;
 float last_time;
 float vx, vy;
 
-enum class Mode
-{
-    FORWARD_1700,
-    STOP_30_1,
-    BACKWARD_500,
-    LEFT_650,
-    FORWARD_500,
-    STOP_30_2,
-    BACKWARD_750,
-    ROTATE,
-    LEFT_950,
-    STOP
-};
-
-Mode currentMode;
-float distanceErrorx = 0.0;
-float distanceErrory = 0.0;
-float distanceErrortheta = 0.0;
-float threshold = 5.0;
-float targetDifference = 1700;
-float targetAngle;
-
 Pose current_pose;
 
 void robot_twist_up(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
@@ -157,6 +135,9 @@ void robot_twist_down(float max_v, float accx, float accy, float last_x, float l
         controller.setTargetTwist({0,0,0});
     }
 }
+
+float acc = 10.0;
+
 void forward_1700()
 {
     // gyrosensor.setRadians(0);
@@ -181,23 +162,23 @@ void backward_500()
 {
     // is_moving = true;
     // gyrosensor.setRadians(0);
-    robot_twist_up(10, 0, 3.0, 0, 1700, 0, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist_up(10, 0, acc, 0, 1700, 0, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void left_650()
 {
     // gyrosensor.setRadians(0);
-    robot_twist_up(10, -3.0, 0, 0, 1700 - 500, -650, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist_up(10, -acc, 0, 0, 1700 - 500, -650, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void forward_500()
 {
     // gyrosensor.setRadians(0);
-    robot_twist_up(10, 0, 3.0, -650, 1700 - 500, -650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist_up(10, 0, acc, -650, 1700 - 500, -650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void backward_750()
 {
     // is_moving = true;
     // gyrosensor.setRadians(0);
-    robot_twist_up(10, 0, 3.0, -650, 1700, -650, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist_up(10, 0, acc, -650, 1700, -650, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void scanBack()
 {
@@ -217,7 +198,7 @@ void rotate_90_CW()
 void left_950()
 {
     // gyrosensor.setRadians(0);
-    robot_twist_up(10, 3.0, 0, -650, 1700 - 750, -650 - 950, 1700 - 950, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist_up(10, acc, 0, -650, 1700 - 750, -650 - 950, 1700 - 950, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 }
 void stop()
 {
@@ -226,20 +207,44 @@ void stop()
     motor3.stop();
 }
 
+
+enum class Mode
+{
+    FORWARD_1700,
+    STOP_30_1,
+    BACKWARD_500,
+    LEFT_650,
+    FORWARD_500,
+    STOP_30_2,
+    BACKWARD_750,
+    ROTATE,
+    LEFT_950,
+    STOP
+};
+
+Mode currentMode;
+float distanceErrorx = 0.0;
+float distanceErrory = 0.0;
+float distanceErrortheta = 0.0;
+float threshold = 100.0;
+float targetDifference = 1700;
+float targetAngle;
+
 void update()
 {
     // 誤差の計算
-    distanceErrorx = targetDifference - current_pose.x;
-    distanceErrory = targetDifference - current_pose.y;
-    distanceErrortheta = targetDifference - current_pose.theta;
+    distanceErrorx = abs(targetDifference - current_pose.x);
+    distanceErrory = abs(targetDifference - current_pose.y);
+    distanceErrortheta = abs(targetDifference - current_pose.theta);
 
     // アクションの切り替え
-    if (abs(distanceErrorx) <= threshold && abs(distanceErrory) <= threshold)
+    if (abs(distanceErrorx) <= threshold || abs(distanceErrory) <= threshold)
     {
         switch (currentMode)
         {
         case Mode::FORWARD_1700:
             currentMode = Mode::STOP_30_1;
+            targetDifference = 500;
             break;
         case Mode::STOP_30_1:
             currentMode = Mode::BACKWARD_500;
