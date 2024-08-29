@@ -57,7 +57,7 @@ std::array<WheelConfig, 3> config = {
 // オドメトリとホイールコントローラの設定
 Odometry<3> odometry(config, {&encoder_FL, &encoder_FR, &encoder_BL});
 WheelController<3> controller(config, {&motor1, &motor2, &motor3});
-PIDController robot_pause_pid(0.7, 0.0, 0.0, 20);
+PIDController robot_pose_pid(0.7, 0.0, 0.0, 20);
 Timer timer;
 Ticker ticker;
 
@@ -65,6 +65,7 @@ float last_time;
 float vx, vy;
 
 Pose current_pose;
+int movement_id = 0;
 
 void robot_twist_up(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
 {
@@ -82,7 +83,7 @@ void robot_twist_up(float max_v, float accx, float accy, float last_x, float las
     float current_position_x = (fl + fr + bl) / 3.0f;
     float current_position_y = (fl + fr + bl) / 3.0f;
 
-    if ((-10 < (x-last_x) < (target_x-x)) && (-10 < (y-last_y) <= (target_y-y))) {
+    if ((-10 < (x-last_x)) && ((x-last_x) < (target_x-x)) && (-10 < (y-last_y)) && ((y-last_y) < (target_y-y))) {
         printf("1st\n");
         float current_time = timer.read();
         printf("current_time = %d\n", (int)current_time);
@@ -91,18 +92,20 @@ void robot_twist_up(float max_v, float accx, float accy, float last_x, float las
 
         last_time = current_time;
         controller.setTargetTwist({vx, vy, 0});
-    } else if ((0 < (target_x-x) < (x-last_x)) && (0 < (target_y-y) < (y-last_y))) {
+    } else if ((0 < (target_x-x)) && ((target_x-x) < (x-last_x)) && (0 < (target_y-y)) && ((target_y-y) < (y-last_y))) {
         printf("2nd\n");
         float current_time = timer.read();
         printf("current_time = %d\n", (int)current_time);
-        controller.setTargetTwist({robot_pause_pid.calculate(target_x - y), robot_pause_pid.calculate(target_y - y), robot_pause_pid.calculate(target_theta - theta)});
+        controller.setTargetTwist({robot_pose_pid.calculate(target_x - y), robot_pose_pid.calculate(target_y - y), robot_pose_pid.calculate(target_theta - theta)});
     } else {
         printf("3rd\n");
+        movement_id++;
         motor1.stop();
         motor2.stop();
         motor3.stop();
     }
 }
+
 void robot_twist_down(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
 {
     float rotations_FL = encoder_FL.getRotations();
@@ -116,7 +119,7 @@ void robot_twist_down(float max_v, float accx, float accy, float last_x, float l
     float current_position_x = (fl + fr + bl) / 3.0f;
     float current_position_y = (fl + fr + bl) / 3.0f;
 
-    if ((-10 < (last_x-x) < (x-target_x)) && (-10 < (last_y-y) <= (y-target_y))) {
+    if ((-10 < (last_x-x)) && ((last_x-x) < (x-target_x)) && (-10 < (last_y-y)) && ((last_y-y) < (y-target_y))) {
         printf("1st\n");
         float current_time = timer.read();
         printf("current_time = %d\n", (int)current_time);
@@ -125,14 +128,17 @@ void robot_twist_down(float max_v, float accx, float accy, float last_x, float l
 
         last_time = current_time;
         controller.setTargetTwist({vx, vy, 0});
-    } else if ((0 < (x-target_x) < (last_x-x)) && (0 < (y-target_y) < (last_y-y))) {
+    } else if ((0 < (x-target_x)) && ((x-target_x) < (last_x-x)) && (0 < (y-target_y)) && ((y-target_y) < (last_y-y))) {
         printf("2nd\n");
         float current_time = timer.read();
         printf("current_time = %d\n", (int)current_time);
-        controller.setTargetTwist({robot_pause_pid.calculate(target_x - y), robot_pause_pid.calculate(target_y - y), robot_pause_pid.calculate(target_theta - theta)});
+        controller.setTargetTwist({robot_pose_pid.calculate(target_x - y), robot_pose_pid.calculate(target_y - y), robot_pose_pid.calculate(target_theta - theta)});
     } else {
         printf("3rd\n");
-        controller.setTargetTwist({0,0,0});
+        movement_id++;
+        motor1.stop();
+        motor2.stop();
+        motor3.stop();
     }
 }
 
@@ -146,7 +152,7 @@ void forward_1700()
 void scanRight() {
     // bool isclose = rightlaser.whetherclose(0.075); // 75mm
     // if (!isclose) {
-        controller.setTargetTwist({robot_pause_pid.calculate(0.05), 0, 0});
+        controller.setTargetTwist({robot_pose_pid.calculate(0.05), 0, 0});
     // } else {
     //     return;
     // }
@@ -223,55 +229,55 @@ enum class Mode
 };
 
 Mode currentMode;
-float distanceErrorx = 0.0;
-float distanceErrory = 0.0;
-float distanceErrortheta = 0.0;
+float distanceError = 0.0;
+float thetaError = 0.0;
 float threshold = 100.0;
-float targetDifference = 1700;
+float targetx = 0;
+float targety = 1700;
 float targetAngle;
 
 void update()
 {
     // 誤差の計算
-    distanceErrorx = abs(targetDifference - current_pose.x);
-    distanceErrory = abs(targetDifference - current_pose.y);
-    distanceErrortheta = abs(targetDifference - current_pose.theta);
+    distanceError = sqrt(pow((targetx - current_pose.x), 2.0)+pow((targety - current_pose.y), 2.0));
+    thetaError = abs(targetAngle - current_pose.theta);
 
     // アクションの切り替え
-    if (abs(distanceErrorx) <= threshold || abs(distanceErrory) <= threshold)
+    if (abs(distanceError) <= threshold)
     {
         switch (currentMode)
         {
         case Mode::FORWARD_1700:
             currentMode = Mode::STOP_30_1;
-            targetDifference = 500;
+            // テストのため仮
+            targety = 1700-500;
             break;
         case Mode::STOP_30_1:
             currentMode = Mode::BACKWARD_500;
-            targetDifference = 500;
+            targety = 1700-500;
             break;
         case Mode::BACKWARD_500:
             currentMode = Mode::LEFT_650;
-            targetDifference = 650;
+            targetx = -650;
             break;
         case Mode::LEFT_650:
             currentMode = Mode::FORWARD_500;
-            targetDifference = 500;
+            targety = 1700;
             break;
         case Mode::FORWARD_500:
             currentMode = Mode::STOP_30_2;
             break;
         case Mode::STOP_30_2:
             currentMode = Mode::BACKWARD_750;
-            targetDifference = 750;
+            targety = 1700-750;
             break;
         case Mode::BACKWARD_750:
             currentMode = Mode::ROTATE;
-            targetDifference = 90;
+            targetAngle = 90;
             break;
         case Mode::ROTATE:
             currentMode = Mode::LEFT_950;
-            targetDifference = 950;
+            targetx = -650-950;
             break;
         case Mode::LEFT_950:
             currentMode = Mode::STOP;
