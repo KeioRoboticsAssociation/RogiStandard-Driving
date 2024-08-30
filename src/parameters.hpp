@@ -8,8 +8,8 @@
 
 //固定値
 #define ENC_RES_MAX (2048*2) //ロータリエンコーダーの分解能
-#define TRED_RADIUS (125.4f) //中心からオムニホイールの距離[mm]
-#define WHEEL_DIAMETER (100.0f)	//オムニホイールの直径	[mm]
+#define TRED_RADIUS (341.6f) //中心からオムニホイールの距離[mm]
+#define WHEEL_DIAMETER (60.0f)	//オムニホイールの直径	[mm]
 #define WHEEL_RADIUS	(WHEEL_DIAMETER/2.0f) //オムニホイールの半径	[mm]
 #define MMPP 		((WHEEL_DIAMETER*PI)/(ENC_RES_MAX))	//エンコーダ1パルスあたりに進む距離[mm]
 #define RADPP 	(MMPP/TRED_RADIUS)	//エンコーダ1パルスあたりの回転角[rad]
