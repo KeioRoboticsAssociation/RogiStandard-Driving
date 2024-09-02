@@ -10,6 +10,8 @@
 #include "PIDController/PIDController.hpp"
 #include "WTT12L/WTT12L.hpp"
 #include "BNO055/BNO055.hpp"
+#include "AirCylinder/AirCylinder.hpp"
+#include "Propeller/Propeller.hpp"
 #include "parameters.hpp"
 #include "settings.hpp"
 
@@ -60,13 +62,21 @@ MotorController motor3(dc3, encoder_BL, {0.16, 0.01, 0.01, 20});
 MotorController motor4(dc4, encoder_BR, {0.16, 0.01, 0.01, 20});
 #endif
 
+#if USE_PROPELLER
+Propeller propeller(DigitalOutPins::PROPELLER_MOTOR_DIR, PwmOutPins::PROPELLER_MOTOR_PWM);
+#endif
+
+#if USE_AIRCYLINDER
+AirCylinder aircylinder(DigitalOutPins::CYLINDER1);
+#endif
+
 #if USE_LASER_WTT12L
-WTT12L rightlaser(AnalogInPins::RIGHT_WTT12L);
-WTT12L backlaser(AnalogInPins::BACK_WTT12L);
+WTT12L rightlaser(DigitalOutPins::RIGHT_WTT12L);
+WTT12L backlaser(DigitalOutPins::BACK_WTT12L);
 #endif
 
 #if USE_GYROSENSOR_BNO055
-BNO055 gyrosensor(ConsolePins::CONSOLE_TX, ConsolePins::CONSOLE_RX);
+BNO055 gyrosensor(UartPins::CONSOLE_TX, UartPins::CONSOLE_RX);
 #endif
 
 // オムニホイールの配置を設定
@@ -92,39 +102,40 @@ std::array<WheelConfig, 3> config = {
 
 #if PERFORMANCE_ROBOT
 std::array<WheelConfig, 2> measuring_config = {
-    WheelConfig{ // x方向
+    WheelConfig{
+        // x方向
         .wheel_radius = WHEEL_RADIUS,        // 車輪の半径
-        .wheel_x = +SQRT2 / 2 * TRED_RADIUS, // 車輪のx座標
-        .wheel_y = +SQRT2 / 2 * TRED_RADIUS, // 車輪のy座標
-        .wheel_theta = M_PI / 4 * 3          // 車輪の角度
+        .wheel_x = +156.6, // 車輪のx座標
+        .wheel_y = +2.344, // 車輪のy座標
+        .wheel_theta = 0.005 * M_PI         // 車輪の角度
     },
-    WheelConfig{ // y方向
+    WheelConfig{// y方向
         .wheel_radius = WHEEL_RADIUS,
-        .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
-        .wheel_y = +SQRT2 / 2 * TRED_RADIUS,
-        .wheel_theta = M_PI / 4}};
+        .wheel_x = -198.1,
+        .wheel_y = +36.00,
+        .wheel_theta = 0.943 * M_PI}};
 std::array<WheelConfig, 4> config = {
     WheelConfig{ // FL
-        .wheel_radius = WHEEL_RADIUS,        // 車輪の半径
-        .wheel_x = +SQRT2 / 2 * TRED_RADIUS, // 車輪のx座標
-        .wheel_y = +SQRT2 / 2 * TRED_RADIUS, // 車輪のy座標
-        .wheel_theta = M_PI / 4 * 3          // 車輪の角度
+                .wheel_radius = WHEEL_RADIUS,        // 車輪の半径
+                .wheel_x = +SQRT2 / 2 * TRED_RADIUS, // 車輪のx座標
+                .wheel_y = +SQRT2 / 2 * TRED_RADIUS, // 車輪のy座標
+                .wheel_theta = M_PI / 4 * 3          // 車輪の角度
     },
-    WheelConfig{ // FR
-        .wheel_radius = WHEEL_RADIUS,
-        .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
-        .wheel_y = +SQRT2 / 2 * TRED_RADIUS,
-        .wheel_theta = M_PI / 4},
-    WheelConfig{ // BL
-        .wheel_radius = WHEEL_RADIUS,
-        .wheel_x = +SQRT2 / 2 * TRED_RADIUS,
-        .wheel_y = -SQRT2 / 2 * TRED_RADIUS,
-        .wheel_theta = M_PI / 4 * 5},
-    WheelConfig{ // BR
-        .wheel_radius = WHEEL_RADIUS,
-        .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
-        .wheel_y = -SQRT2 / 2 * TRED_RADIUS,
-        .wheel_theta = M_PI / 4 * 7}};
+    WheelConfig{// FR
+                .wheel_radius = WHEEL_RADIUS,
+                .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
+                .wheel_y = +SQRT2 / 2 * TRED_RADIUS,
+                .wheel_theta = M_PI / 4},
+    WheelConfig{// BL
+                .wheel_radius = WHEEL_RADIUS,
+                .wheel_x = +SQRT2 / 2 * TRED_RADIUS,
+                .wheel_y = -SQRT2 / 2 * TRED_RADIUS,
+                .wheel_theta = M_PI / 4 * 5},
+    WheelConfig{// BR
+                .wheel_radius = WHEEL_RADIUS,
+                .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
+                .wheel_y = -SQRT2 / 2 * TRED_RADIUS,
+                .wheel_theta = M_PI / 4 * 7}};
 #endif
 
 // オドメトリとホイールコントローラの設定
@@ -134,17 +145,31 @@ WheelController<3> controller(config, {&motor1, &motor2, &motor3});
 #endif
 #if PERFORMANCE_ROBOT
 Odometry<2> odometry(measuring_config, {&encoder_1, &encoder_2});
-WheelController<4> controller(config, {&motor1, &motor2, &motor3, &encoder_4});
+WheelController<4> controller(config, {&motor1, &motor2, &motor3, &motor4});
+DigitalIn start_sw(DigitalInPins::START_SWITCH);
 #endif
-PIDController robot_pose_pid(0.5, 0.0, 0.0, 20);
+PIDController robot_pose_pid_x(0.5, 0.0, 0.0, 20); 
+PIDController robot_pose_pid_y(0.5, 0.0, 0.0, 20); 
+PIDController robot_pose_pid_theta(0.5, 0.0, 0.0, 20); 
+
+PIDController robot_velocity_pid_x(0.5, 0.0, 0.0, 20); 
+PIDController robot_velocity_pid_y(0.5, 0.0, 0.0, 20); 
+PIDController robot_velocity_pid_theta(0.5, 0.0, 0.0, 20); 
 Timer timer;
 Ticker ticker;
 
-float last_time;
-float vx, vy;
-
+float vx, vy, vtheta;
 Pose current_pose;
-int movement_id = 0;
+
+void robot_twist(float target_x, float target_y, float target_theta, float x, float y, float theta)
+{
+    // target_x単位はmm
+    // kp1, kd,ki 0.01くらい
+    vx = robot_velocity_pid_x.calculate(robot_pose_pid_x.calculate(target_x - x));
+    vy = robot_velocity_pid_y.calculate(robot_pose_pid_y.calculate(target_y - y));
+    vtheta = robot_velocity_pid_theta.calculate(robot_pose_pid_theta.calculate(target_theta - theta));
+    controller.setTargetTwist({vx, vy, vtheta});
+}
 
 void robot_twist_up(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
 {
@@ -158,8 +183,6 @@ void robot_twist_up(float max_v, float accx, float accy, float last_x, float las
         printf("current_time = %d\n", (int)current_time);
         vx = accx * (current_time);
         vy = accy * (current_time);
-
-        last_time = current_time;
         controller.setTargetTwist({vx, vy, 0});
         printf("last_x: %d, last_y: %d, x: %d, y: %d, target_x: %d, target_y: %d\n", (int)last_x, (int)last_y, (int)x, (int)y, (int)target_x, (int)target_y);
     }
@@ -170,92 +193,18 @@ void robot_twist_up(float max_v, float accx, float accy, float last_x, float las
         float current_time = timer.read();
         printf("current_time = %d\n", (int)current_time);
 
-        controller.setTargetTwist({robot_pose_pid.calculate(target_x - x), robot_pose_pid.calculate(target_y - y), robot_pose_pid.calculate(target_theta - theta)});
+        controller.setTargetTwist({robot_pose_pid_x.calculate(target_x - x), robot_pose_pid_y.calculate(target_y - y), robot_pose_pid_theta.calculate(target_theta - theta)});
     }
     else
     {
         printf("3rd\n");
         printf("last_x: %d, x: %d, last_y: %d, y: %d\n", (int)last_x, (int)x, (int)last_y, (int)y);
 
-        movement_id++;
         motor1.stop();
         motor2.stop();
         motor3.stop();
     }
 }
-
-void robot_twist_down(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
-{
-
-    if (((last_y - y) < (y - target_y)))
-    {
-        printf("2-1st\n");
-
-        float current_time = timer.read();
-        printf("current_time = %d\n", (int)current_time);
-
-        vx = accx * (current_time);
-        vy = accy * (current_time);
-
-        last_time = current_time;
-        controller.setTargetTwist({vx, vy, 0});
-        printf("vx = %d, vy = %d\n", (int)vx, (int)vy);
-    }
-    else if ((0 < (y - target_y)) && ((y - target_y) < (last_y - y)))
-    {
-        printf("2-2nd\n");
-
-        float current_time = timer.read();
-        printf("current_time = %d\n", (int)current_time);
-
-        controller.setTargetTwist({robot_pose_pid.calculate(target_x - x), robot_pose_pid.calculate(target_y - y), robot_pose_pid.calculate(target_theta - theta)});
-    }
-    else
-    {
-        printf("2-3rd\n");
-
-        movement_id++;
-        motor1.stop();
-        motor2.stop();
-        motor3.stop();
-    }
-}
-
-void robot_twist_left(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
-{
-
-    if (((last_x - x) <= (x - target_x)))
-    {
-        printf("3-1st\n");
-        float current_time = timer.read();
-        printf("current_time = %d\n", (int)current_time);
-        vx = accx * (current_time);
-        vy = accy * (current_time);
-
-        last_time = current_time;
-        controller.setTargetTwist({vx, vy, 0});
-        printf("last_x: %d, last_y: %d, x: %d, y: %d, target_x: %d, target_y: %d\n", (int)last_x, (int)last_y, (int)x, (int)y, (int)target_x, (int)target_y);
-    }
-    else if (((0 < (x - target_x)) && ((x - target_x) < (last_x - x))))
-    {
-        printf("3-2nd\n");
-        float current_time = timer.read();
-        printf("current_time = %d\n", (int)current_time);
-        controller.setTargetTwist({robot_pose_pid.calculate(target_x - x), robot_pose_pid.calculate(target_y - y), robot_pose_pid.calculate(target_theta - theta)});
-    }
-    else
-    {
-        printf("3-3rd\n");
-        printf("last_x: %d, x: %d, last_y: %d, y: %d\n", (int)last_x, (int)x, (int)last_y, (int)y);
-
-        movement_id++;
-        motor1.stop();
-        motor2.stop();
-        motor3.stop();
-    }
-}
-
-float acc = 10.0;
 
 float distanceError = 0.0;
 float thetaError = 0.0;
@@ -264,6 +213,12 @@ float targetx = 0;
 float targety = 1700;
 float targetAngle;
 
+void stop()
+{
+    motor1.stop();
+    motor2.stop();
+    motor3.stop();
+}
 bool forward_1700()
 {
 #if USE_GYROSENSOR_BNO055
@@ -272,7 +227,7 @@ bool forward_1700()
     distanceError = sqrt(pow(current_pose.x, 2.0) + pow(1700 - current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist_up(10.0, 0, 10.0, 0, 0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -298,24 +253,29 @@ bool stop_30()
     float current_time = timer.read();
     if (current_time < 30)
     {
+        stop();
+        #if USE_PROPELLER
+        propeller.Start(0.5);
+        #endif
         return false;
     }
     else
     {
+        #if USE_PROPELLER
+        propeller.Start(0);
+        #endif
         return true;
     }
-    stop();
-    wait_us(30000);
 }
 bool backward_500()
 {
-#if USE_GYROSENSOR_BNO055
+    #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(0);
-#endif
+    #endif
     distanceError = sqrt(pow(current_pose.x, 2.0) + pow(1200 - current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist_down(10, 0, -acc, 0, 1700, 0, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(0, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -331,7 +291,7 @@ bool left_650()
     distanceError = sqrt(pow(-650 - current_pose.x, 2.0) + pow(1200 - current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist_left(10, -acc, 0, 0, 1700 - 500, -650, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(-650, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -347,7 +307,7 @@ bool forward_500()
     distanceError = sqrt(pow(-650 - current_pose.x, 2.0) + pow(1700 - current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist_up(10, 0, acc, -650, 1700 - 500, -650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(-650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -364,7 +324,7 @@ bool backward_750()
     distanceError = sqrt(pow(-650 - current_pose.x, 2.0) + pow(1700 - 750 - current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist_down(10, 0, -acc, -650, 1700, -650, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(-650, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -387,14 +347,13 @@ bool scanBack()
 }
 bool rotate_90()
 {
-// ロボット座標系で上から見て時計回り90度回転は-90度回転
 #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(-M_PI / 2);
 #endif
     thetaError = -M_PI / 2 - current_pose.theta;
     if (thetaError > -M_PI / 16)
     {
-        robot_twist_up(10, 0, 0, -650, 1700 - 750, -650, 1700 - 750, -M_PI / 2, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(-650, 1700 - 750, -M_PI / 2, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -410,7 +369,7 @@ bool left_950()
     distanceError = sqrt(pow(-650 - 950 - current_pose.x, 2.0) + pow(1700 - 950 - current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist_left(10, -acc, 0, -650, 1700 - 750, -650 - 950, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(-650 - 950, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -418,11 +377,24 @@ bool left_950()
         return true;
     }
 }
-void stop()
+bool release()
 {
-    motor1.stop();
-    motor2.stop();
-    motor3.stop();
+    float current_time = timer.read();
+    if (current_time < 60)
+    {
+        stop();
+#if USE_AIRCYLINDER
+        aircylinder.on();
+#endif
+        return false;
+    }
+    else
+    {
+#if USE_AIRCYLINDER
+        aircylinder.off();
+#endif
+        return true;
+    }
 }
 
 enum Mode
@@ -440,6 +412,8 @@ enum Mode
     SCAN_BACK,
     ROTATE,
     LEFT_950,
+    WAIT, // 待つ？どれくらいで到着するかによる
+    RELEASE,
     STOP
 };
 
@@ -523,7 +497,12 @@ void update()
     switch (currentMode)
     {
     case Mode::INIT:
-        printf("Initializing...");
+#if PERFORMANCE_ROBOT
+        while (!start_sw)
+        {
+            printf("waiting for start...");
+        }
+#endif
         currentMode = FORWARD_1700;
         break;
     case Mode::FORWARD_1700:
@@ -604,10 +583,16 @@ void update()
     case Mode::LEFT_950:
         if (left_950())
         {
+            updateMode(Mode::RELEASE);
+            currentMode = Mode::RELEASE;
+        }
+        break;
+    case Mode::RELEASE:
+        if (release())
+        {
             updateMode(Mode::STOP);
             currentMode = Mode::STOP;
         }
-        break;
     case Mode::STOP:
         // 何もしない
         break;
@@ -629,18 +614,12 @@ int main()
         current_pose = odometry.getPose();
         printf("pos: %d, %d, %d\n", (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         printf("difference_x = %d, difference_y = %d, difference_theta = %d\n", (int)current_pose.x, 1700 - (int)current_pose.y, (int)current_pose.theta);
+        #if TEST
+        robot_twist_up(0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        #endif
 
-#if TEST
-        robot_twist_up(10.0, 0, 10.0, 0, 0, 0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
-#endif
-
-#if !TEST
+        #if !TEST
         update();
-#endif
-
-        // wait_us(5000);
-
-        // 機体が回転したときにロボット座標系がフィールド座標系に対して回転することに注意？
-        // ロボット座標系で上から見て時計回り90度回転は-90度回転
+        #endif
     }
 }
