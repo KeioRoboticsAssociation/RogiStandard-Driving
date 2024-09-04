@@ -2,10 +2,12 @@
 
 class WTT12L {
     public:
-        WTT12L(PinName pinA);
-        bool whetherclose(float target_threshold);
+        WTT12L(PinName pinA, PinName pinB);
+        int getOutput1(); // ターゲット距離より近い
+        int getOutput2(); // ターゲット距離
 
-        AnalogIn rangefinder;
+        DigitalIn rangefinder1;
+        DigitalIn rangefinder2;
     private:
          
 };

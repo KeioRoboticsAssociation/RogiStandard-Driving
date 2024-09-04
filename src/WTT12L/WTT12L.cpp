@@ -1,21 +1,19 @@
 #include <mbed.h>
 #include "WTT12L.hpp"
 
-WTT12L::WTT12L(PinName pinA) : rangefinder(pinA) {
+WTT12L::WTT12L(PinName pinA, PinName pinB) : rangefinder1(pinA), rangefinder2(pinB) {
     // 初期化
 }
 
-bool WTT12L::whetherclose(float target_threshold) {
-    if (rangefinder > target_threshold) {
-        printf("close\n");
-        wait_us(500000);
+int WTT12L::getOutput1() {
+    // 近いと1、遠いと0を出力
+    int output = rangefinder1.read();
+    return output;
+}
 
-        return true;
-    } else {
-        printf("far\n");
-        wait_us(500000);
-
-        return false;
-    }
+int WTT12L::getOutput2() {
+    // 近いと1、遠いと0を出力
+    int output = rangefinder2.read();
+    return output;
 }
 

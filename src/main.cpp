@@ -9,6 +9,7 @@
 #include "MotorController/MotorController.hpp"
 #include "PIDController/PIDController.hpp"
 #include "WTT12L/WTT12L.hpp"
+#include "WTT12L/WTT12LBack.hpp"
 #include "BNO055/BNO055.hpp"
 #include "AirCylinder/AirCylinder.hpp"
 #include "Propeller/Propeller.hpp"
@@ -17,9 +18,9 @@
 
 #if !PERFORMANCE_ROBOT
 // 測定輪encoderの設定
-Encoder encoder_1(InterruptInPins::MEASURING_ENCODER1_A, DigitalInPins::MEASURING_ENCODER1_B, 2048, 1, false);
-Encoder encoder_2(InterruptInPins::MEASURING_ENCODER2_A, DigitalInPins::MEASURING_ENCODER2_B, 2048, 1, false);
-Encoder encoder_3(InterruptInPins::MEASURING_ENCODER3_A, DigitalInPins::MEASURING_ENCODER3_B, 2048, 1, false);
+Encoder encoder_1(InterruptInPins::ENCODER_FL_A, DigitalInPins::ENCODER_FL_B, 2048, 1, false);
+Encoder encoder_2(InterruptInPins::ENCODER_FR_A, DigitalInPins::ENCODER_FR_B, 2048, 1, false);
+Encoder encoder_3(InterruptInPins::ENCODER_BL_A, DigitalInPins::ENCODER_BL_B, 2048, 1, false);
 #endif
 
 #if PERFORMANCE_ROBOT
@@ -71,8 +72,8 @@ AirCylinder aircylinder(DigitalOutPins::CYLINDER1);
 #endif
 
 #if USE_LASER_WTT12L
-WTT12L rightlaser(DigitalOutPins::RIGHT_WTT12L);
-WTT12L backlaser(DigitalOutPins::BACK_WTT12L);
+WTT12L rightlaser(DigitalInPins::RIGHT_WTT12L_1, DigitalInPins::RIGHT_WTT12L_2);
+WTT12LBack backlaser(DigitalInPins::BACK_WTT12L);
 #endif
 
 #if USE_GYROSENSOR_BNO055
@@ -104,22 +105,23 @@ std::array<WheelConfig, 3> config = {
 std::array<WheelConfig, 2> measuring_config = {
     WheelConfig{
         // x方向
-        .wheel_radius = WHEEL_RADIUS,        // 車輪の半径
-        .wheel_x = +156.6, // 車輪のx座標
-        .wheel_y = +2.344, // 車輪のy座標
-        .wheel_theta = 0.005 * M_PI         // 車輪の角度
+        .wheel_radius = WHEEL_RADIUS, // 車輪の半径
+        .wheel_x = +156.6,            // 車輪のx座標
+        .wheel_y = +2.344,            // 車輪のy座標
+        .wheel_theta = 0.005 * M_PI   // 車輪の角度
     },
     WheelConfig{// y方向
-        .wheel_radius = WHEEL_RADIUS,
-        .wheel_x = -198.1,
-        .wheel_y = +36.00,
-        .wheel_theta = 0.943 * M_PI}};
+                .wheel_radius = WHEEL_RADIUS,
+                .wheel_x = -198.1,
+                .wheel_y = +36.00,
+                .wheel_theta = 0.943 * M_PI}};
 std::array<WheelConfig, 4> config = {
-    WheelConfig{ // FL
-                .wheel_radius = WHEEL_RADIUS,        // 車輪の半径
-                .wheel_x = +SQRT2 / 2 * TRED_RADIUS, // 車輪のx座標
-                .wheel_y = +SQRT2 / 2 * TRED_RADIUS, // 車輪のy座標
-                .wheel_theta = M_PI / 4 * 3          // 車輪の角度
+    WheelConfig{
+        // FL
+        .wheel_radius = WHEEL_RADIUS,        // 車輪の半径
+        .wheel_x = +SQRT2 / 2 * TRED_RADIUS, // 車輪のx座標
+        .wheel_y = +SQRT2 / 2 * TRED_RADIUS, // 車輪のy座標
+        .wheel_theta = M_PI / 4 * 3          // 車輪の角度
     },
     WheelConfig{// FR
                 .wheel_radius = WHEEL_RADIUS,
@@ -148,18 +150,25 @@ Odometry<2> odometry(measuring_config, {&encoder_1, &encoder_2});
 WheelController<4> controller(config, {&motor1, &motor2, &motor3, &motor4});
 DigitalIn start_sw(DigitalInPins::START_SWITCH);
 #endif
-PIDController robot_pose_pid_x(0.5, 0.0, 0.0, 20); 
-PIDController robot_pose_pid_y(0.5, 0.0, 0.0, 20); 
-PIDController robot_pose_pid_theta(0.5, 0.0, 0.0, 20); 
+PIDController robot_pose_pid_x(0.5, 0.0, 0.0, 20);
+PIDController robot_pose_pid_y(0.5, 0.0, 0.0, 20);
+PIDController robot_pose_pid_theta(0.5, 0.0, 0.0, 20);
 
-PIDController robot_velocity_pid_x(0.5, 0.0, 0.0, 20); 
-PIDController robot_velocity_pid_y(0.5, 0.0, 0.0, 20); 
-PIDController robot_velocity_pid_theta(0.5, 0.0, 0.0, 20); 
+PIDController robot_velocity_pid_x(0.5, 0.0, 0.0, 20);
+PIDController robot_velocity_pid_y(0.5, 0.0, 0.0, 20);
+PIDController robot_velocity_pid_theta(0.5, 0.0, 0.0, 20);
 Timer timer;
 Ticker ticker;
 
 float vx, vy, vtheta;
 Pose current_pose;
+
+void stop()
+{
+    motor1.stop();
+    motor2.stop();
+    motor3.stop();
+}
 
 void robot_twist(float target_x, float target_y, float target_theta, float x, float y, float theta)
 {
@@ -199,10 +208,7 @@ void robot_twist_up(float max_v, float accx, float accy, float last_x, float las
     {
         printf("3rd\n");
         printf("last_x: %d, x: %d, last_y: %d, y: %d\n", (int)last_x, (int)x, (int)last_y, (int)y);
-
-        motor1.stop();
-        motor2.stop();
-        motor3.stop();
+        stop();
     }
 }
 
@@ -213,12 +219,56 @@ float targetx = 0;
 float targety = 1700;
 float targetAngle;
 
-void stop()
+#if USE_LASER_WTT12L
+bool adjustByRightlaser()
 {
-    motor1.stop();
-    motor2.stop();
-    motor3.stop();
+    while (1)
+    {
+        if (rightlaser.getOutput1() == 1) // ターゲット距離より近い
+        {
+            // 現在の距離が目標より小さい場合、左に移動
+            controller.setTargetTwist({-0.5, 0, 0});
+            return false;
+        }
+        else if (rightlaser.getOutput2() == 0) // ターゲット距離より遠い
+        {
+            // 現在の距離が目標より大きい場合、右に移動
+            controller.setTargetTwist({0.5, 0, 0});
+            return false;
+        }
+        else
+        {
+            current_pose.x = 0;
+            stop();
+            printf("Position adjusted: Distance to wall = %.2f mm\n", 0.075 - current_pose.x);
+            return true;
+            break;
+        }
+        wait_us(100); // 100ms
+    }
 }
+bool adjustByBacklaser()
+{
+    while (1)
+    {
+        if (backlaser.getOutput() == 0) // ターゲット距離より遠い
+        {
+            // 現在の距離が目標より大きい場合、右に移動
+            controller.setTargetTwist({0.5, 0, 0});
+            return false;
+        }
+        else
+        {
+            current_pose.x = 0;
+            stop();
+            printf("Position adjusted: Distance to wall = %.2f mm\n", 0.075 - current_pose.x);
+            return true;
+            break;
+        }
+        wait_us(100); // 100ms
+    }
+}
+#endif
 bool forward_1700()
 {
 #if USE_GYROSENSOR_BNO055
@@ -238,7 +288,7 @@ bool forward_1700()
 bool scanRight()
 {
 #if USE_LASER_WTT12L
-    if (adjustPositionToWall(0.075) == false)
+    if (adjustByRightlaser() == false)
     {
         return false;
     }
@@ -335,7 +385,7 @@ bool backward_750()
 bool scanBack()
 {
 #if USE_LASER_WTT12L
-    if (adjustPosition(0.95) == false)
+    if (adjustByBacklaser() == false)
     {
         return false;
     }
@@ -358,6 +408,9 @@ bool rotate_90()
     }
     else
     {
+#if USE_GYROSENSOR_BNO055
+        gyrosensor.reset();
+#endif
         return true;
     }
 }
@@ -434,76 +487,13 @@ void updateMode(Mode new_mode)
     }
 }
 
-#if USE_LASER_WTT12L
-bool adjustPositionToWall(float target_distance)
-{
-    while (1)
-    {
-        if (rightlaser.whetherclose(target_distance * 2 / 3) == true)
-        {
-            // 現在の距離が目標より小さい場合、左に移動
-            controller.setTargetTwist({-0.5, 0, 0});
-            return false;
-        }
-        else if (rightlaser.whetherclose(target_distance) == true)
-        {
-            // 現在の距離が目標より大きい場合、右に移動
-            controller.setTargetTwist({0.5, 0, 0});
-            return false;
-        }
-        else
-        {
-            current_pose.x = 0;
-            stop();
-            printf("Position adjusted: Distance to wall = %.2f mm\n", 0.075 - current_pose.x);
-            return true;
-            break;
-        }
-        wait_us(100); // 100ms
-    }
-}
-bool adjustPosition(float target_distance)
-{
-    while (1)
-    {
-        if (backlaser.whetherclose(target_distance * 2 / 3) == true)
-        {
-            // 現在の距離が目標より小さい場合、左に移動
-            controller.setTargetTwist({-0.5, 0, 0});
-            return false;
-        }
-        else if (backlaser.whetherclose(target_distance) == true)
-        {
-            // 現在の距離が目標より大きい場合、右に移動
-            controller.setTargetTwist({0.5, 0, 0});
-            return false;
-        }
-        else
-        {
-            current_pose.x = 0;
-            stop();
-            printf("Position adjusted: Distance to wall = %.2f mm\n", 0.075 - current_pose.x);
-            return true;
-            break;
-        }
-        wait_us(100); // 100ms
-    }
-}
-#endif
-
 void update()
 {
     // アクションの切り替え
     switch (currentMode)
     {
     case Mode::INIT:
-#if PERFORMANCE_ROBOT
-        while (!start_sw)
-        {
-            printf("waiting for start...");
-        }
-#endif
-        currentMode = FORWARD_1700;
+        currentMode = Mode::FORWARD_1700;
         break;
     case Mode::FORWARD_1700:
         if (forward_1700())
@@ -603,23 +593,30 @@ bool is_moivng = false;
 
 int main()
 {
-    // wait_us(3000);
-    // Twist target_twist = ;
-    printf("hello\n");
     timer.start();
+    printf("System ready. Waiting for button press...\n");
+
+    while (start_sw == 1) {
+        ThisThread::sleep_for(100ms);
+    }
+    printf("Button pressed! Starting operation...\n");
 
     while (1)
-    {
-        printf("Hello\n");
-        current_pose = odometry.getPose();
-        printf("pos: %d, %d, %d\n", (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
-        printf("difference_x = %d, difference_y = %d, difference_theta = %d\n", (int)current_pose.x, 1700 - (int)current_pose.y, (int)current_pose.theta);
-        #if TEST
-        robot_twist_up(0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
-        #endif
 
-        #if !TEST
+    {
+        printf("Encoder fl: %d, fr: %d, bl: %d, br: %d, measur1: %d, measur2: %d\n", (int)encoder_FL.getCount(), (int)encoder_FR.getCount(), (int)encoder_BL.getCount(), (int)encoder_BR.getCount(), (int)encoder_1.getCount(), (int)encoder_2.getCount());
+
+        // printf("bno output: %d\n", (int)gyrosensor.getRadians() * 1000);
+
+        current_pose = odometry.getPose();
+        printf("pos: %d, %d, %d\n", (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
+        // printf("difference_x = %d, difference_y = %d, difference_theta = %d\n", (int)current_pose.x, 1700 - (int)current_pose.y, (int)gyrosensor.getRadians() * 1000);
+#if TEST
+        robot_twist_up(0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+#endif
+
+#if !TEST
         update();
-        #endif
+#endif
     }
 }

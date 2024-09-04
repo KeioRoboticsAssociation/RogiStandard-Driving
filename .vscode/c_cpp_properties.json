@@ -82,6 +82,7 @@
                 "C:/Users/kaoru/.platformio/packages/framework-mbed/targets/TARGET_STM/TARGET_STM32F4/STM32Cube_FW/STM32F4xx_HAL_Driver/Legacy",
                 "C:/Users/kaoru/.platformio/packages/framework-mbed/targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F446xE",
                 "C:/Users/kaoru/.platformio/packages/framework-mbed/targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F446xE/TARGET_NUCLEO_F446RE",
+                "C:/RogiStandard-Driving/.pio/libdeps/nucleo_f446re/Unity/src",
                 ""
             ],
             "browse": {
@@ -161,6 +162,7 @@
                     "C:/Users/kaoru/.platformio/packages/framework-mbed/targets/TARGET_STM/TARGET_STM32F4/STM32Cube_FW/STM32F4xx_HAL_Driver/Legacy",
                     "C:/Users/kaoru/.platformio/packages/framework-mbed/targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F446xE",
                     "C:/Users/kaoru/.platformio/packages/framework-mbed/targets/TARGET_STM/TARGET_STM32F4/TARGET_STM32F446xE/TARGET_NUCLEO_F446RE",
+                    "C:/RogiStandard-Driving/.pio/libdeps/nucleo_f446re/Unity/src",
                     ""
                 ]
             },

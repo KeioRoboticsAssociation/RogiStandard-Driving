@@ -20,50 +20,6 @@ const float KD = 0.0;
 
 //モーターのPIDゲイン
 
-#if(USING_R1)
-
-#define MOTOR_0_KP_1 (1.3f)
-#define MOTOR_0_KI_1 (0.06f)
-#define MOTOR_0_KD_1 (0.0f)
-
-#define MOTOR_1_KP_1 (1.3f)
-#define MOTOR_1_KI_1 (0.06f)
-#define MOTOR_1_KD_1 (0.0f)
-
-#define MOTOR_2_KP_1 (1.3f)
-#define MOTOR_2_KI_1 (0.06f)
-#define MOTOR_2_KD_1 (0.0f)
-
-#define MOTOR_3_KP_1 (1.3f)
-#define MOTOR_3_KI_1 (0.06f)
-#define MOTOR_3_KD_1 (0.0f)
-
-#define MOTOR_0_KP_2 (0.00016f)
-#define MOTOR_0_KI_2 (0.000000f)
-#define MOTOR_0_KD_2 (0.00000f)
-
-#define MOTOR_1_KP_2 (0.00016f*1.17f)
-#define MOTOR_1_KI_2 (0.00000f)
-#define MOTOR_1_KD_2 (0.000000f)
-
-#define MOTOR_2_KP_2 (0.00016f)
-#define MOTOR_2_KI_2 (0.00000f)
-#define MOTOR_2_KD_2 (0.00000f)
-
-#define MOTOR_3_KP_2 (0.00016f*1.17f)
-#define MOTOR_3_KI_2 (0.000000f)
-#define MOTOR_3_KD_2 (0.0f)
-
-#define DRIVEBASE_KP (1.3f)
-#define DRIVEBASE_KI (0.08f)
-#define DRIVEBASE_KD (0.0f)
-
-#define DRIVEBASE_ROTATE_KP (DRIVEBASE_KP)
-#define DRIVEBASE_ROTATE_KI (DRIVEBASE_KI)
-#define DRIVEBASE_ROTATE_KD (DRIVEBASE_KD)
-
-#else
-
 #define MOTOR_0_KP_1 (1.3f)
 #define MOTOR_0_KI_1 (0.06f)
 #define MOTOR_0_KD_1 (0.0f)
@@ -103,7 +59,6 @@ const float KD = 0.0;
 #define DRIVEBASE_ROTATE_KP (DRIVEBASE_KP)
 #define DRIVEBASE_ROTATE_KI (DRIVEBASE_KI)
 #define DRIVEBASE_ROTATE_KD (DRIVEBASE_KD)
-#endif
 
 //移動パラメータ
 #define MAX_ACCELERATION (20000) //最大加速度 [mm/s^2]
