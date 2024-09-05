@@ -37,30 +37,30 @@ Encoder encoder_BR(InterruptInPins::ENCODER_BR_A, DigitalInPins::ENCODER_BR_B, 2
 
 // DCモータの設定
 #if !PERFORMANCE_ROBOT
-DCMotor dc1(PwmOutPins::MOTOR1_PWM, DigitalOutPins::MOTOR1_DIR, 0);
-DCMotor dc2(PwmOutPins::MOTOR2_PWM, DigitalOutPins::MOTOR2_DIR, 0);
-DCMotor dc3(PwmOutPins::MOTOR3_PWM, DigitalOutPins::MOTOR3_DIR, 0);
+DCMotor dc_FL(PwmOutPins::MOTOR_FL_PWM, DigitalOutPins::MOTOR_FL_DIR, 0);
+DCMotor dc_FR(PwmOutPins::MOTOR_FR_PWM, DigitalOutPins::MOTOR_FR_DIR, 0);
+DCMotor dc_BL(PwmOutPins::MOTOR_BL_PWM, DigitalOutPins::MOTOR_BL_DIR, 0);
 #endif
 
 #if PERFORMANCE_ROBOT
-DCMotor dc1(PwmOutPins::MOTOR1_PWM, DigitalOutPins::MOTOR1_DIR, 0);
-DCMotor dc2(PwmOutPins::MOTOR2_PWM, DigitalOutPins::MOTOR2_DIR, 0);
-DCMotor dc3(PwmOutPins::MOTOR3_PWM, DigitalOutPins::MOTOR3_DIR, 0);
-DCMotor dc4(PwmOutPins::MOTOR4_PWM, DigitalOutPins::MOTOR4_DIR, 0);
+DCMotor dc_FL(PwmOutPins::MOTOR_FL_PWM, DigitalOutPins::MOTOR_FL_DIR, 0);
+DCMotor dc_FR(PwmOutPins::MOTOR_FR_PWM, DigitalOutPins::MOTOR_FR_DIR, 0);
+DCMotor dc_BL(PwmOutPins::MOTOR_BL_PWM, DigitalOutPins::MOTOR_BL_DIR, 0);
+DCMotor dc_BR(PwmOutPins::MOTOR_BR_PWM, DigitalOutPins::MOTOR_BR_DIR, 0);
 #endif
 
 // モーターコントローラの設定
 #if !PERFORMANCE_ROBOT
-MotorController motor1(dc1, encoder_1, {0.16, 0.01, 0.01, 20});
-MotorController motor2(dc2, encoder_2, {0.16, 0.01, 0.01, 20});
-MotorController motor3(dc3, encoder_3, {0.16, 0.01, 0.01, 20});
+MotorController motor_FL(dc_FL, encoder_1, {0.16, 0.01, 0.01, 20});
+MotorController motor_FR(dc_FR, encoder_2, {0.16, 0.01, 0.01, 20});
+MotorController motor_BL(dc_BL, encoder_3, {0.16, 0.01, 0.01, 20});
 #endif
 
 #if PERFORMANCE_ROBOT
-MotorController motor1(dc1, encoder_FL, {0.16, 0.01, 0.01, 20});
-MotorController motor2(dc2, encoder_FR, {0.16, 0.01, 0.01, 20});
-MotorController motor3(dc3, encoder_BL, {0.16, 0.01, 0.01, 20});
-MotorController motor4(dc4, encoder_BR, {0.16, 0.01, 0.01, 20});
+MotorController motor_FL(dc_FL, encoder_FL, {0.16, 0.01, 0.01, 20});
+MotorController motor_FR(dc_FR, encoder_FR, {0.16, 0.01, 0.01, 20});
+MotorController motor_BL(dc_BL, encoder_BL, {0.16, 0.01, 0.01, 20});
+MotorController motor_BR(dc_BR, encoder_BR, {0.16, 0.01, 0.01, 20});
 #endif
 
 #if USE_PROPELLER
@@ -102,6 +102,7 @@ std::array<WheelConfig, 3> config = {
 #endif
 
 #if PERFORMANCE_ROBOT
+#if USE_MEASURING_WHEEL
 std::array<WheelConfig, 2> measuring_config = {
     WheelConfig{
         // x方向
@@ -115,39 +116,40 @@ std::array<WheelConfig, 2> measuring_config = {
                 .wheel_x = -198.1,
                 .wheel_y = +36.00,
                 .wheel_theta = 0.943 * M_PI}};
+#endif
 std::array<WheelConfig, 4> config = {
     WheelConfig{
         // FL
         .wheel_radius = WHEEL_RADIUS,        // 車輪の半径
         .wheel_x = +SQRT2 / 2 * TRED_RADIUS, // 車輪のx座標
         .wheel_y = +SQRT2 / 2 * TRED_RADIUS, // 車輪のy座標
-        .wheel_theta = M_PI / 4 * 3          // 車輪の角度
+        .wheel_theta = M_PI / 4          // 車輪の角度
     },
     WheelConfig{// FR
                 .wheel_radius = WHEEL_RADIUS,
-                .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
-                .wheel_y = +SQRT2 / 2 * TRED_RADIUS,
-                .wheel_theta = M_PI / 4},
-    WheelConfig{// BL
-                .wheel_radius = WHEEL_RADIUS,
                 .wheel_x = +SQRT2 / 2 * TRED_RADIUS,
                 .wheel_y = -SQRT2 / 2 * TRED_RADIUS,
-                .wheel_theta = M_PI / 4 * 5},
+                .wheel_theta = M_PI / 4 * 7},
+    WheelConfig{// BL
+                .wheel_radius = WHEEL_RADIUS,
+                .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
+                .wheel_y = +SQRT2 / 2 * TRED_RADIUS,
+                .wheel_theta = M_PI / 4 * 3},
     WheelConfig{// BR
                 .wheel_radius = WHEEL_RADIUS,
                 .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
                 .wheel_y = -SQRT2 / 2 * TRED_RADIUS,
-                .wheel_theta = M_PI / 4 * 7}};
+                .wheel_theta = M_PI / 4 * 5}};
 #endif
 
 // オドメトリとホイールコントローラの設定
 #if !PERFORMANCE_ROBOT
 Odometry<3> odometry(config, {&encoder_1, &encoder_2, &encoder_3});
-WheelController<3> controller(config, {&motor1, &motor2, &motor3});
+WheelController<3> controller(config, {&motor_FL, &motor_FR, &motor_BL});
 #endif
 #if PERFORMANCE_ROBOT
-Odometry<2> odometry(measuring_config, {&encoder_1, &encoder_2});
-WheelController<4> controller(config, {&motor1, &motor2, &motor3, &motor4});
+Odometry<4> odometry(config, {&encoder_FL, &encoder_FR, &encoder_BL, &encoder_BR});
+WheelController<4> controller(config, {&motor_FL, &motor_FR, &motor_BL, &motor_BR});
 DigitalIn start_sw(DigitalInPins::START_SWITCH);
 #endif
 PIDController robot_pose_pid_x(0.5, 0.0, 0.0, 20);
@@ -165,9 +167,10 @@ Pose current_pose;
 
 void stop()
 {
-    motor1.stop();
-    motor2.stop();
-    motor3.stop();
+    motor_FL.stop();
+    motor_FR.stop();
+    motor_BL.stop();
+    motor_BR.stop();
 }
 
 void robot_twist(float target_x, float target_y, float target_theta, float x, float y, float theta)
@@ -227,13 +230,13 @@ bool adjustByRightlaser()
         if (rightlaser.getOutput1() == 1) // ターゲット距離より近い
         {
             // 現在の距離が目標より小さい場合、左に移動
-            controller.setTargetTwist({-0.5, 0, 0});
+            controller.setTargetTwist({0, 0.5, 0});
             return false;
         }
         else if (rightlaser.getOutput2() == 0) // ターゲット距離より遠い
         {
             // 現在の距離が目標より大きい場合、右に移動
-            controller.setTargetTwist({0.5, 0, 0});
+            controller.setTargetTwist({0, -0.5, 0});
             return false;
         }
         else
@@ -254,7 +257,7 @@ bool adjustByBacklaser()
         if (backlaser.getOutput() == 0) // ターゲット距離より遠い
         {
             // 現在の距離が目標より大きい場合、右に移動
-            controller.setTargetTwist({0.5, 0, 0});
+            controller.setTargetTwist({0, 0.5, 0});
             return false;
         }
         else
@@ -274,10 +277,10 @@ bool forward_1700()
 #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(0);
 #endif
-    distanceError = sqrt(pow(current_pose.x, 2.0) + pow(1700 - current_pose.y, 2.0));
+    distanceError = sqrt(pow(1700-current_pose.x, 2.0) + pow(current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist(0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(1700, 0, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -322,10 +325,10 @@ bool backward_500()
     #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(0);
     #endif
-    distanceError = sqrt(pow(current_pose.x, 2.0) + pow(1200 - current_pose.y, 2.0));
+    distanceError = sqrt(1200-pow(current_pose.x, 2.0) + pow(current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist(0, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(1200, 0, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -338,10 +341,10 @@ bool left_650()
 #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(0);
 #endif
-    distanceError = sqrt(pow(-650 - current_pose.x, 2.0) + pow(1200 - current_pose.y, 2.0));
+    distanceError = sqrt(pow(1200 - current_pose.x, 2.0) + pow(650 - current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist(-650, 1700 - 500, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(1200, 650, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -354,10 +357,10 @@ bool forward_500()
 #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(0);
 #endif
-    distanceError = sqrt(pow(-650 - current_pose.x, 2.0) + pow(1700 - current_pose.y, 2.0));
+    distanceError = sqrt(pow(1700 - current_pose.x, 2.0) + pow(650 - current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist(-650, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(1700, 650, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -371,10 +374,10 @@ bool backward_750()
 #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(0);
 #endif
-    distanceError = sqrt(pow(-650 - current_pose.x, 2.0) + pow(1700 - 750 - current_pose.y, 2.0));
+    distanceError = sqrt(pow(1700 - 750 - current_pose.x, 2.0) + pow(650 - current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist(-650, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(1700 - 750, 650, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -400,10 +403,10 @@ bool rotate_90()
 #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(-M_PI / 2);
 #endif
-    thetaError = -M_PI / 2 - current_pose.theta;
+    thetaError = M_PI / 2 - current_pose.theta;
     if (thetaError > -M_PI / 16)
     {
-        robot_twist(-650, 1700 - 750, -M_PI / 2, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(1700 - 750, 650, M_PI / 2, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -419,10 +422,10 @@ bool left_950()
 #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(0);
 #endif
-    distanceError = sqrt(pow(-650 - 950 - current_pose.x, 2.0) + pow(1700 - 950 - current_pose.y, 2.0));
+    distanceError = sqrt(pow(1700 - 750 - current_pose.x, 2.0) + pow(650+950 - current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist(-650 - 950, 1700 - 750, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(1700 - 750, 650+950, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -609,14 +612,26 @@ int main()
         // printf("bno output: %d\n", (int)gyrosensor.getRadians() * 1000);
 
         current_pose = odometry.getPose();
-        printf("pos: %d, %d, %d\n", (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
+        // printf("pos: %d, %d, %d\n", (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
         // printf("difference_x = %d, difference_y = %d, difference_theta = %d\n", (int)current_pose.x, 1700 - (int)current_pose.y, (int)gyrosensor.getRadians() * 1000);
+        // controller.setTargetTwist({10.0, 0.0, 0.0});
+        vx = robot_velocity_pid_x.calculate(robot_pose_pid_x.calculate(0 - current_pose.x));
+        vy = robot_velocity_pid_y.calculate(robot_pose_pid_y.calculate(1700 - current_pose.y));
+        vtheta = robot_velocity_pid_theta.calculate(robot_pose_pid_theta.calculate(0 - current_pose.theta));
+        controller.setTargetTwist({vx, vy, vtheta});
+        // printf("pidx: %d, pidy: %d, pidtheta: %d\n", (int)robot_pose_pid_x.calculate(1700 - current_pose.x), (int)robot_pose_pid_y.calculate(0 - current_pose.y), (int)robot_pose_pid_theta.calculate(0 - current_pose.theta));
+        // printf("vx: %d, vy: %d, vtheta: %d\n", (int)vx, (int)vy, (int)vtheta);
+        // printf("cx: %d, cy: %d\n", (int)current_pose.x, (int)current_pose.y);
+        // motor_FL.setTargetSpeed(3.0);// 右後ろbr
+        // motor_FR.setTargetSpeed(3.0);// 右前fr
+        // motor_BL.setTargetSpeed(3.0);// 左前fl
+        // motor_BR.setTargetSpeed(3.0);// 左後ろbl
 #if TEST
         robot_twist_up(0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 #endif
 
 #if !TEST
-        update();
+        // update();
 #endif
     }
 }

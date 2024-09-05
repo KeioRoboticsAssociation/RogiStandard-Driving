@@ -12,7 +12,7 @@
 
 template <int N>
 class Odometry {
-    static_assert(N >= 2, "N must be greater than 2.");
+    static_assert(N > 2, "N must be greater than 2.");
     public:
         Odometry(const std::array<WheelConfig, N>& wheel_configs, const std::array<Encoder*, N>& encoders, std::chrono::microseconds update_interval = std::chrono::microseconds(5000)) 
             : encoders(encoders)
