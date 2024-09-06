@@ -123,23 +123,23 @@ std::array<WheelConfig, 4> config = {
         .wheel_radius = WHEEL_RADIUS,        // 車輪の半径
         .wheel_x = +SQRT2 / 2 * TRED_RADIUS, // 車輪のx座標
         .wheel_y = +SQRT2 / 2 * TRED_RADIUS, // 車輪のy座標
-        .wheel_theta = M_PI / 4          // 車輪の角度
+        .wheel_theta = M_PI / 4 * 7          // 車輪の角度
     },
     WheelConfig{// FR
                 .wheel_radius = WHEEL_RADIUS,
                 .wheel_x = +SQRT2 / 2 * TRED_RADIUS,
                 .wheel_y = -SQRT2 / 2 * TRED_RADIUS,
-                .wheel_theta = M_PI / 4 * 7},
+                .wheel_theta = M_PI / 4},
     WheelConfig{// BL
                 .wheel_radius = WHEEL_RADIUS,
                 .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
                 .wheel_y = +SQRT2 / 2 * TRED_RADIUS,
-                .wheel_theta = M_PI / 4 * 3},
+                .wheel_theta = M_PI / 4 * 5},
     WheelConfig{// BR
                 .wheel_radius = WHEEL_RADIUS,
                 .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
                 .wheel_y = -SQRT2 / 2 * TRED_RADIUS,
-                .wheel_theta = M_PI / 4 * 5}};
+                .wheel_theta = M_PI / 4 * 3}};
 #endif
 
 // オドメトリとホイールコントローラの設定
@@ -152,13 +152,13 @@ Odometry<4> odometry(config, {&encoder_FL, &encoder_FR, &encoder_BL, &encoder_BR
 WheelController<4> controller(config, {&motor_FL, &motor_FR, &motor_BL, &motor_BR});
 DigitalIn start_sw(DigitalInPins::START_SWITCH);
 #endif
-PIDController robot_pose_pid_x(0.5, 0.0, 0.0, 20);
-PIDController robot_pose_pid_y(0.5, 0.0, 0.0, 20);
-PIDController robot_pose_pid_theta(0.5, 0.0, 0.0, 20);
+PIDController robot_pose_pid_x(0.4, 0.0, 0.0, 20);
+PIDController robot_pose_pid_y(0.4, 0.0, 0.0, 20);
+PIDController robot_pose_pid_theta(0.4, 0.0, 0.0, 20);
 
-PIDController robot_velocity_pid_x(0.5, 0.0, 0.0, 20);
-PIDController robot_velocity_pid_y(0.5, 0.0, 0.0, 20);
-PIDController robot_velocity_pid_theta(0.5, 0.0, 0.0, 20);
+PIDController robot_velocity_pid_x(0.4, 0.0, 0.0, 20);
+PIDController robot_velocity_pid_y(0.4, 0.0, 0.0, 20);
+PIDController robot_velocity_pid_theta(0.4, 0.0, 0.0, 20);
 Timer timer;
 Ticker ticker;
 
@@ -181,7 +181,8 @@ void robot_twist(float target_x, float target_y, float target_theta, float x, fl
     vy = robot_velocity_pid_y.calculate(robot_pose_pid_y.calculate(target_y - y));
     vtheta = robot_velocity_pid_theta.calculate(robot_pose_pid_theta.calculate(target_theta - theta));
     controller.setTargetTwist({vx, vy, vtheta});
-}
+    printf("vx: %d, vy: %d, vtheta: %d\n", (int)vx, (int)vy, (int)vtheta)
+;}
 
 void robot_twist_up(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
 {
@@ -605,27 +606,28 @@ int main()
     printf("Button pressed! Starting operation...\n");
 
     while (1)
-
     {
         printf("Encoder fl: %d, fr: %d, bl: %d, br: %d, measur1: %d, measur2: %d\n", (int)encoder_FL.getCount(), (int)encoder_FR.getCount(), (int)encoder_BL.getCount(), (int)encoder_BR.getCount(), (int)encoder_1.getCount(), (int)encoder_2.getCount());
 
         // printf("bno output: %d\n", (int)gyrosensor.getRadians() * 1000);
 
         current_pose = odometry.getPose();
-        // printf("pos: %d, %d, %d\n", (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
+        printf("pos: %d, %d, %d\n", (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
         // printf("difference_x = %d, difference_y = %d, difference_theta = %d\n", (int)current_pose.x, 1700 - (int)current_pose.y, (int)gyrosensor.getRadians() * 1000);
-        // controller.setTargetTwist({10.0, 0.0, 0.0});
-        vx = robot_velocity_pid_x.calculate(robot_pose_pid_x.calculate(0 - current_pose.x));
-        vy = robot_velocity_pid_y.calculate(robot_pose_pid_y.calculate(1700 - current_pose.y));
+        controller.setTargetTwist({0.0, 15.0, 0.0});
+
+        vx = robot_velocity_pid_x.calculate(robot_pose_pid_x.calculate(1700 - current_pose.x));
+        vy = robot_velocity_pid_y.calculate(robot_pose_pid_y.calculate(0 - current_pose.y));
         vtheta = robot_velocity_pid_theta.calculate(robot_pose_pid_theta.calculate(0 - current_pose.theta));
-        controller.setTargetTwist({vx, vy, vtheta});
+        // controller.setTargetTwist({vx, vy, vtheta});
+
         // printf("pidx: %d, pidy: %d, pidtheta: %d\n", (int)robot_pose_pid_x.calculate(1700 - current_pose.x), (int)robot_pose_pid_y.calculate(0 - current_pose.y), (int)robot_pose_pid_theta.calculate(0 - current_pose.theta));
         // printf("vx: %d, vy: %d, vtheta: %d\n", (int)vx, (int)vy, (int)vtheta);
         // printf("cx: %d, cy: %d\n", (int)current_pose.x, (int)current_pose.y);
-        // motor_FL.setTargetSpeed(3.0);// 右後ろbr
-        // motor_FR.setTargetSpeed(3.0);// 右前fr
-        // motor_BL.setTargetSpeed(3.0);// 左前fl
-        // motor_BR.setTargetSpeed(3.0);// 左後ろbl
+        // motor_FL.setTargetSpeed(3.0);
+        // motor_FR.setTargetSpeed(3.0);
+        // motor_BL.setTargetSpeed(3.0);
+        motor_BR.setTargetSpeed(3.0);
 #if TEST
         robot_twist_up(0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 #endif

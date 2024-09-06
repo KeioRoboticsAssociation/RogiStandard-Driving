@@ -18,6 +18,7 @@ class Odometry {
             : encoders(encoders)
         {
             wheel_vectors_inv = getWheelVectorInv(wheel_configs);
+            printf("wheel_vectors_inv: %d, %d, %d\n", (int)wheel_vectors_inv.at(0).kx*1000, (int)wheel_vectors_inv.at(0).ky*1000, (int)wheel_vectors_inv.at(0).ktheta*1000);
             ticker.attach(callback(this, &Odometry::update), update_interval); // オドメトリの更新周期を設定
             setPose({0.0, 0.0, 0.0});
             last_encoder_counts.fill(0);
