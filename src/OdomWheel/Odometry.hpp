@@ -18,7 +18,10 @@ class Odometry {
             : encoders(encoders)
         {
             wheel_vectors_inv = getWheelVectorInv(wheel_configs);
-            printf("wheel_vectors_inv: %d, %d, %d\n", (int)wheel_vectors_inv.at(0).kx*1000, (int)wheel_vectors_inv.at(0).ky*1000, (int)wheel_vectors_inv.at(0).ktheta*1000);
+            printf("wheel_vectors_inv0: %d, %d, %d\n", (int)(wheel_vectors_inv.at(0).kx * 1000), (int)(wheel_vectors_inv.at(0).ky * 1000), (int)(wheel_vectors_inv.at(0).ktheta * 1000));
+            printf("wheel_vectors_inv1: %d, %d, %d\n", (int)(wheel_vectors_inv.at(1).kx * 1000), (int)(wheel_vectors_inv.at(1).ky * 1000), (int)(wheel_vectors_inv.at(1).ktheta * 1000));
+            printf("wheel_vectors_inv2: %d, %d, %d\n", (int)(wheel_vectors_inv.at(2).kx * 1000), (int)(wheel_vectors_inv.at(2).ky * 1000), (int)(wheel_vectors_inv.at(2).ktheta * 1000));
+            printf("wheel_vectors_inv3: %d, %d, %d\n", (int)(wheel_vectors_inv.at(3).kx * 1000), (int)(wheel_vectors_inv.at(3).ky * 1000), (int)(wheel_vectors_inv.at(3).ktheta * 1000));
             ticker.attach(callback(this, &Odometry::update), update_interval); // オドメトリの更新周期を設定
             setPose({0.0, 0.0, 0.0});
             last_encoder_counts.fill(0);
@@ -62,7 +65,7 @@ class Odometry {
             float delta_theta = 0.0;
 
             for (int i = 0; i < N; i++) {
-                float encoder_delta = encoders.at(i)->countToRotations(encoder_counts.at(i) - last_encoder_counts.at(i));
+                float encoder_delta = encoders.at(i)->countToRadians(encoder_counts.at(i) - last_encoder_counts.at(i));
                 last_encoder_counts.at(i) = encoder_counts.at(i); // 最後のエンコーダーのカウントを更新
                 delta_x += encoder_delta * wheel_vectors_inv.at(i).kx;
                 delta_y += encoder_delta * wheel_vectors_inv.at(i).ky;

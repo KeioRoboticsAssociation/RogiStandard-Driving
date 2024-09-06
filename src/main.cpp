@@ -72,8 +72,8 @@ AirCylinder aircylinder(DigitalOutPins::CYLINDER1);
 #endif
 
 #if USE_LASER_WTT12L
-WTT12L rightlaser(DigitalInPins::RIGHT_WTT12L_1, DigitalInPins::RIGHT_WTT12L_2);
-WTT12LBack backlaser(DigitalInPins::BACK_WTT12L);
+WTT12L backlaser(DigitalInPins::RIGHT_WTT12L_1, DigitalInPins::RIGHT_WTT12L_2);
+WTT12LBack rightlaser(DigitalInPins::BACK_WTT12L);
 #endif
 
 #if USE_GYROSENSOR_BNO055
@@ -129,12 +129,12 @@ std::array<WheelConfig, 4> config = {
                 .wheel_radius = WHEEL_RADIUS,
                 .wheel_x = +SQRT2 / 2 * TRED_RADIUS,
                 .wheel_y = -SQRT2 / 2 * TRED_RADIUS,
-                .wheel_theta = M_PI / 4},
+                .wheel_theta = M_PI / 4 * 5},
     WheelConfig{// BL
                 .wheel_radius = WHEEL_RADIUS,
                 .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
                 .wheel_y = +SQRT2 / 2 * TRED_RADIUS,
-                .wheel_theta = M_PI / 4 * 5},
+                .wheel_theta = M_PI / 4},
     WheelConfig{// BR
                 .wheel_radius = WHEEL_RADIUS,
                 .wheel_x = -SQRT2 / 2 * TRED_RADIUS,
@@ -181,8 +181,9 @@ void robot_twist(float target_x, float target_y, float target_theta, float x, fl
     vy = robot_velocity_pid_y.calculate(robot_pose_pid_y.calculate(target_y - y));
     vtheta = robot_velocity_pid_theta.calculate(robot_pose_pid_theta.calculate(target_theta - theta));
     controller.setTargetTwist({vx, vy, vtheta});
-    printf("vx: %d, vy: %d, vtheta: %d\n", (int)vx, (int)vy, (int)vtheta)
-;}
+    // printf("vx: %d, vy: %d, vtheta: %d\n", (int)vx, (int)vy, (int)vtheta)
+    ;
+}
 
 void robot_twist_up(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
 {
@@ -224,61 +225,61 @@ float targety = 1700;
 float targetAngle;
 
 #if USE_LASER_WTT12L
-bool adjustByRightlaser()
-{
-    while (1)
-    {
-        if (rightlaser.getOutput1() == 1) // ターゲット距離より近い
-        {
-            // 現在の距離が目標より小さい場合、左に移動
-            controller.setTargetTwist({0, 0.5, 0});
-            return false;
-        }
-        else if (rightlaser.getOutput2() == 0) // ターゲット距離より遠い
-        {
-            // 現在の距離が目標より大きい場合、右に移動
-            controller.setTargetTwist({0, -0.5, 0});
-            return false;
-        }
-        else
-        {
-            current_pose.x = 0;
-            stop();
-            printf("Position adjusted: Distance to wall = %.2f mm\n", 0.075 - current_pose.x);
-            return true;
-            break;
-        }
-        wait_us(100); // 100ms
-    }
-}
-bool adjustByBacklaser()
-{
-    while (1)
-    {
-        if (backlaser.getOutput() == 0) // ターゲット距離より遠い
-        {
-            // 現在の距離が目標より大きい場合、右に移動
-            controller.setTargetTwist({0, 0.5, 0});
-            return false;
-        }
-        else
-        {
-            current_pose.x = 0;
-            stop();
-            printf("Position adjusted: Distance to wall = %.2f mm\n", 0.075 - current_pose.x);
-            return true;
-            break;
-        }
-        wait_us(100); // 100ms
-    }
-}
+// bool adjustByRightlaser()
+// {
+//     while (1)
+//     {
+//         if (rightlaser.getOutput1() == 1) // ターゲット距離より近い
+//         {
+//             // 現在の距離が目標より小さい場合、左に移動
+//             controller.setTargetTwist({0, 0.5, 0});
+//             return false;
+//         }
+//         else if (rightlaser.getOutput2() == 0) // ターゲット距離より遠い
+//         {
+//             // 現在の距離が目標より大きい場合、右に移動
+//             controller.setTargetTwist({0, -0.5, 0});
+//             return false;
+//         }
+//         else
+//         {
+//             current_pose.x = 0;
+//             stop();
+//             printf("Position adjusted: Distance to wall = %.2f mm\n", 0.075 - current_pose.x);
+//             return true;
+//             break;
+//         }
+//         wait_us(100); // 100ms
+//     }
+// }
+// bool adjustByBacklaser()
+// {
+//     while (1)
+//     {
+//         if (backlaser.getOutput() == 0) // ターゲット距離より遠い
+//         {
+//             // 現在の距離が目標より大きい場合、右に移動
+//             controller.setTargetTwist({0, 0.5, 0});
+//             return false;
+//         }
+//         else
+//         {
+//             current_pose.x = 0;
+//             stop();
+//             printf("Position adjusted: Distance to wall = %.2f mm\n", 0.075 - current_pose.x);
+//             return true;
+//             break;
+//         }
+//         wait_us(100); // 100ms
+//     }
+// }
 #endif
 bool forward_1700()
 {
 #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(0);
 #endif
-    distanceError = sqrt(pow(1700-current_pose.x, 2.0) + pow(current_pose.y, 2.0));
+    distanceError = sqrt(pow(1700 - current_pose.x, 2.0) + pow(current_pose.y, 2.0));
     if (distanceError > threshold)
     {
         robot_twist(1700, 0, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
@@ -289,44 +290,44 @@ bool forward_1700()
         return true;
     }
 }
-bool scanRight()
-{
-#if USE_LASER_WTT12L
-    if (adjustByRightlaser() == false)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
-#endif
-}
+// bool scanRight()
+// {
+// #if USE_LASER_WTT12L
+//     if (adjustByRightlaser() == false)
+//     {
+//         return false;
+//     }
+//     else
+//     {
+//         return true;
+//     }
+// #endif
+// }
 bool stop_30()
 {
     float current_time = timer.read();
     if (current_time < 30)
     {
         stop();
-        #if USE_PROPELLER
+#if USE_PROPELLER
         propeller.Start(0.5);
-        #endif
+#endif
         return false;
     }
     else
     {
-        #if USE_PROPELLER
+#if USE_PROPELLER
         propeller.Start(0);
-        #endif
+#endif
         return true;
     }
 }
 bool backward_500()
 {
-    #if USE_GYROSENSOR_BNO055
+#if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(0);
-    #endif
-    distanceError = sqrt(1200-pow(current_pose.x, 2.0) + pow(current_pose.y, 2.0));
+#endif
+    distanceError = sqrt(1200 - pow(current_pose.x, 2.0) + pow(current_pose.y, 2.0));
     if (distanceError > threshold)
     {
         robot_twist(1200, 0, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
@@ -386,28 +387,28 @@ bool backward_750()
         return true;
     }
 }
-bool scanBack()
-{
-#if USE_LASER_WTT12L
-    if (adjustByBacklaser() == false)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
-#endif
-}
+// bool scanBack()
+// {
+// #if USE_LASER_WTT12L
+//     if (adjustByBacklaser() == false)
+//     {
+//         return false;
+//     }
+//     else
+//     {
+//         return true;
+//     }
+// #endif
+// }
 bool rotate_90()
 {
 #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(-M_PI / 2);
 #endif
-    thetaError = M_PI / 2 - current_pose.theta;
+    thetaError = -M_PI / 2 - current_pose.theta;
     if (thetaError > -M_PI / 16)
     {
-        robot_twist(1700 - 750, 650, M_PI / 2, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(1700 - 750, 650, -M_PI / 2, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -423,10 +424,10 @@ bool left_950()
 #if USE_GYROSENSOR_BNO055
     gyrosensor.setRadians(0);
 #endif
-    distanceError = sqrt(pow(1700 - 750 - current_pose.x, 2.0) + pow(650+950 - current_pose.y, 2.0));
+    distanceError = sqrt(pow(1700 - 750 - current_pose.x, 2.0) + pow(650 + 950 - current_pose.y, 2.0));
     if (distanceError > threshold)
     {
-        robot_twist(1700 - 750, 650+950, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+        robot_twist(1700 - 750, 650 + 950, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
         return false;
     }
     else
@@ -507,11 +508,12 @@ void update()
         }
         break;
     case Mode::SCAN_RIGHT:
-        if (scanRight())
-        {
-            updateMode(Mode::STOP_30_1);
-            currentMode = Mode::STOP_30_1;
-        }
+        // if (scanRight())
+        // {
+        //     updateMode(Mode::STOP_30_1);
+        //     currentMode = Mode::STOP_30_1;
+        // }
+        break;
     case Mode::STOP_30_1:
         if (stop_30())
         {
@@ -541,11 +543,8 @@ void update()
         }
         break;
     case Mode::SCAN_RIGHT_2:
-        if (scanRight())
-        {
-            updateMode(Mode::STOP_30_2);
-            currentMode = Mode::STOP_30_2;
-        }
+        //
+        break;
     case Mode::STOP_30_2:
         if (stop_30())
         {
@@ -561,11 +560,11 @@ void update()
         }
         break;
     case Mode::SCAN_BACK:
-        if (scanBack())
-        {
-            updateMode(Mode::ROTATE);
-            currentMode = Mode::ROTATE;
-        }
+        // if (scanBack())
+        // {
+        //     updateMode(Mode::ROTATE);
+        //     currentMode = Mode::ROTATE;
+        // }
         break;
     case Mode::ROTATE:
         if (rotate_90())
@@ -597,43 +596,153 @@ bool is_moivng = false;
 
 int main()
 {
-    timer.start();
     printf("System ready. Waiting for button press...\n");
 
-    while (start_sw == 1) {
+    while (start_sw == 1)
+    {
         ThisThread::sleep_for(100ms);
     }
     printf("Button pressed! Starting operation...\n");
 
-    while (1)
+    // printf("Encoder fl: %d, fr: %d, bl: %d, br: %d, measur1: %d, measur2: %d\n", (int)encoder_FL.getCount(), (int)encoder_FR.getCount(), (int)encoder_BL.getCount(), (int)encoder_BR.getCount(), (int)encoder_1.getCount(), (int)encoder_2.getCount());
+
+    // printf("bno output: %d\n", (int)gyrosensor.getRadians() * 1000);
+
+    // current_pose = odometry.getPose();
+    // printf("pos: %d, %d, %d\n", (int)(current_pose.x*100), (int)(current_pose.y*100), (int)(current_pose.theta*100));
+    // printf("difference_x = %d, difference_y = %d, difference_theta = %d\n", (int)current_pose.x, 1700 - (int)current_pose.y, (int)gyrosensor.getRadians() * 1000);
+    // controller.setTargetTwist({0.0, 0.0, 1.0});
+
+    // vx = robot_velocity_pid_x.calculate(robot_pose_pid_x.calculate(1700 - current_pose.x));
+    // vy = robot_velocity_pid_y.calculate(robot_pose_pid_y.calculate(0 - current_pose.y));
+    // vtheta = robot_velocity_pid_theta.calculate(robot_pose_pid_theta.calculate(0 - current_pose.theta));
+    // controller.setTargetTwist({vx, vy, vtheta});
+    // controller.setTargetTwist({40, 0, 0});
+
+    // printf("pidx: %d, pidy: %d, pidtheta: %d\n", (int)robot_pose_pid_x.calculate(1700 - current_pose.x), (int)robot_pose_pid_y.calculate(0 - current_pose.y), (int)robot_pose_pid_theta.calculate(0 - current_pose.theta));
+    // printf("vx: %d, vy: %d, vtheta: %d\n", (int)vx, (int)vy, (int)vtheta);
+    // printf("%d\n", (int)current_pose.theta*1000);
+
+    // motor_FL.setTargetSpeed(3.0);
+    // motor_FR.setTargetSpeed(3.0);
+    // motor_BL.setTargetSpeed(3.0);
+    // motor_BR.setTargetSpeed(3.0);
+    aircylinder.on();
+    controller.setTargetTwist({40, 0, 0});
+    printf("40.0, 0, 0\n");
+    int i;  
+    while (backlaser.getOutput1())
     {
-        printf("Encoder fl: %d, fr: %d, bl: %d, br: %d, measur1: %d, measur2: %d\n", (int)encoder_FL.getCount(), (int)encoder_FR.getCount(), (int)encoder_BL.getCount(), (int)encoder_BR.getCount(), (int)encoder_1.getCount(), (int)encoder_2.getCount());
+        ThisThread::sleep_for(10ms);
+        printf("backlaser1 on\n");
+        i++;
+        printf("%d ", i);
+    }
+    // mawasu
 
-        // printf("bno output: %d\n", (int)gyrosensor.getRadians() * 1000);
+    // おそらく時間が３０秒以下の間はプロペラを回す
+    // ちょっと長そうなので20秒にしてみた
+    // 30秒を超えたところでプロペラを止める
+    timer.reset();
+    // while(1){
+    //     if (timer.read() < 20)
+    //     {
+    //         stop();
+    //         #if USE_PROPELLER
+    //         propeller.Start(0.5);
+    //         printf("propeller moving.\n");
+    //         #endif
+    //     }
+    //     else
+    //     {
+    //         #if USE_PROPELLER
+    //         propeller.Start(0);
+    //         printf("propeller stopped.\n");
+    //         #endif
+    //         break;
+    //     }   
+    // }
+//     if (current_time < 30)
+//     {
+//         stop();
+// #if USE_PROPELLER
+//         propeller.Start(0.5);
+// #endif
+//         return false;
+//     }
+//     else
+//     {
+// #if USE_PROPELLER
+//         propeller.Start(0);
+// #endif
+//         return true;
+//     }
+    // timer.reset();
+    // timer.start();
+    // while(1){
+    //     if (timer.read() < 20)
+    //     {
+    //         stop();
+    //         #if USE_PROPELLER
+    //         propeller.Start(0.5);
+    //         printf("propeller moving.");
+    //         #endif
+    //     }
+    //     else
+    //     {
+    //         #if USE_PROPELLER
+    //         propeller.Start(0);
+    //         printf("propeller stopped.");
+    //         #endif
+    //         break;
+    //     }   
+    // }
+    printf("stop_30\n");
 
-        current_pose = odometry.getPose();
-        printf("pos: %d, %d, %d\n", (int)current_pose.x, (int)current_pose.y, (int)gyrosensor.getRadians());
-        // printf("difference_x = %d, difference_y = %d, difference_theta = %d\n", (int)current_pose.x, 1700 - (int)current_pose.y, (int)gyrosensor.getRadians() * 1000);
-        controller.setTargetTwist({0.0, 15.0, 0.0});
+    controller.setTargetTwist({-40.0, 0, 0});
+    printf("-40.0, 0, 0\n");
+    while (!backlaser.getOutput2())
+    {
+        ThisThread::sleep_for(10ms);
+        printf("backlaser2 on\n");
+    }
 
-        vx = robot_velocity_pid_x.calculate(robot_pose_pid_x.calculate(1700 - current_pose.x));
-        vy = robot_velocity_pid_y.calculate(robot_pose_pid_y.calculate(0 - current_pose.y));
-        vtheta = robot_velocity_pid_theta.calculate(robot_pose_pid_theta.calculate(0 - current_pose.theta));
-        // controller.setTargetTwist({vx, vy, vtheta});
+    controller.setTargetTwist({0, 40.0, 0});
+    ThisThread::sleep_for(std::chrono::milliseconds(3000));
+    printf("0, 40.0, 0\n");
 
-        // printf("pidx: %d, pidy: %d, pidtheta: %d\n", (int)robot_pose_pid_x.calculate(1700 - current_pose.x), (int)robot_pose_pid_y.calculate(0 - current_pose.y), (int)robot_pose_pid_theta.calculate(0 - current_pose.theta));
-        // printf("vx: %d, vy: %d, vtheta: %d\n", (int)vx, (int)vy, (int)vtheta);
-        // printf("cx: %d, cy: %d\n", (int)current_pose.x, (int)current_pose.y);
-        // motor_FL.setTargetSpeed(3.0);
-        // motor_FR.setTargetSpeed(3.0);
-        // motor_BL.setTargetSpeed(3.0);
-        motor_BR.setTargetSpeed(3.0);
+    controller.setTargetTwist({40, 0, 0});
+    ThisThread::sleep_for(std::chrono::milliseconds(3000));
+    printf("40, 0, 0\n");
+
+    // mawasu
+
+    controller.setTargetTwist({-40, 0, 0});
+    ThisThread::sleep_for(std::chrono::milliseconds(3000));
+    printf("-40, 0, 0\n");
+
+    controller.setTargetTwist({0, 40, 0});
+    while (rightlaser.getOutput())
+    {
+        ThisThread::sleep_for(10ms);
+        printf("rightlaser on\n");
+    }
+
+    controller.setTargetTwist({0, 0, -1.0});
+    printf("0, 0, -1.0\n");
+    ThisThread::sleep_for(3100ms);
+    release();
+
+    // while(1){
+    //     printf("backlaser1: %d, backlaser2: %d, rightlaser: %d\n", backlaser.getOutput1(), backlaser.getOutput2(), rightlaser.getOutput());
+    //     ThisThread::sleep_for(100ms);
+    // }
+
 #if TEST
-        robot_twist_up(0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
+    robot_twist_up(0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 #endif
 
 #if !TEST
-        // update();
+    // update();
 #endif
-    }
 }
