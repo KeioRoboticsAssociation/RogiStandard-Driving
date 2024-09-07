@@ -9,7 +9,7 @@ public:
     PwmOut speed;
     DigitalOut dir;
 
-    void Start(int duty);
+    void Start(float duty);
 };
 
 Propeller::Propeller(PinName dirPin, PinName pwmPin)
@@ -21,7 +21,7 @@ Propeller::Propeller(PinName dirPin, PinName pwmPin)
     dir.write(1);
 }
 
-void Propeller::Start(int duty)
+void Propeller::Start(float duty)
 {
     if (duty > 0)
     {
