@@ -463,14 +463,12 @@ int main()
 {
     printf("System ready. Waiting for button press...\n");
 
-    // while (start_sw == 1)
-    // {
-    //     ThisThread::sleep_for(100ms);
-    // }
-    // printf("Button pressed! Starting operation...\n");
-    // ThisThread::sleep_for(1000ms);
-    // aircylinder.on();
-    // propeller.Start(-0.5);
+    while (start_sw == 1)
+    {
+        ThisThread::sleep_for(100ms);
+    }
+    printf("Button pressed! Starting operation...\n");
+    ThisThread::sleep_for(1000ms);
 
     while (start_sw == 1)
     {
@@ -478,63 +476,7 @@ int main()
     }
     
     timer.start();
-    // おそらく時間が３０秒以下の間はプロペラを回す
-    // ちょっと長そうなので20秒にしてみた
-    // 30秒を超えたところでプロペラを止める
-    // timer.reset();
-    // while(1){
-    //     if (timer.read() < 20)
-    //     {
-    //         stop();
-    //         #if USE_PROPELLER
-    //         propeller.Start(0.5);
-    //         printf("propeller moving.\n");
-    //         #endif
-    //     }
-    //     else
-    //     {
-    //         #if USE_PROPELLER
-    //         propeller.Start(0);
-    //         printf("propeller stopped.\n");
-    //         #endif
-    //         break;
-    //     }   
-    // }
-//     if (current_time < 30)
-//     {
-//         stop();
-// #if USE_PROPELLER
-//         propeller.Start(0.5);
-// #endif
-//         return false;
-//     }
-//     else
-//     {
-// #if USE_PROPELLER
-//         propeller.Start(0);
-// #endif
-//         return true;
-//     }
-    // timer.reset();
-    // timer.start();
-    // while(1){
-    //     if (timer.read() < 20)
-    //     {
-    //         stop();
-    //         #if USE_PROPELLER
-    //         propeller.Start(0.5);
-    //         printf("propeller moving.");
-    //         #endif
-    //     }
-    //     else
-    //     {
-    //         #if USE_PROPELLER
-    //         propeller.Start(0);
-    //         printf("propeller stopped.");
-    //         #endif
-    //         break;
-    //     }   
-    // }
+    
 #if TEST
     robot_twist_up(0, 1700, 0, (int)current_pose.x, (int)current_pose.y, (int)current_pose.theta);
 #endif
