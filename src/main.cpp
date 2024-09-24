@@ -185,38 +185,6 @@ void robot_twist(float target_x, float target_y, float target_theta, float x, fl
     ;
 }
 
-void robot_twist_up(float max_v, float accx, float accy, float last_x, float last_y, float target_x, float target_y, float target_theta, float x, float y, float theta)
-{
-    // target_x単位はmm
-    // kp1, kd,ki 0.01くらい
-
-    if (((y - last_y) <= (target_y - y)))
-    {
-        printf("1st\n");
-        float current_time = timer.read();
-        printf("current_time = %d\n", (int)current_time);
-        vx = accx * (current_time);
-        vy = accy * (current_time);
-        controller.setTargetTwist({vx, vy, 0});
-        printf("last_x: %d, last_y: %d, x: %d, y: %d, target_x: %d, target_y: %d\n", (int)last_x, (int)last_y, (int)x, (int)y, (int)target_x, (int)target_y);
-    }
-    else if (((0 < (target_y - y)) && ((target_y - y) < (y - last_y))))
-    {
-        printf("2nd\n");
-
-        float current_time = timer.read();
-        printf("current_time = %d\n", (int)current_time);
-
-        controller.setTargetTwist({robot_pose_pid_x.calculate(target_x - x), robot_pose_pid_y.calculate(target_y - y), robot_pose_pid_theta.calculate(target_theta - theta)});
-    }
-    else
-    {
-        printf("3rd\n");
-        printf("last_x: %d, x: %d, last_y: %d, y: %d\n", (int)last_x, (int)x, (int)last_y, (int)y);
-        stop();
-    }
-}
-
 float distanceError = 0.0;
 float thetaError = 0.0;
 float threshold = 200.0;
@@ -224,11 +192,12 @@ float targetx = 0;
 float targety = 1700;
 float targetAngle;
 
-bool forward_1700()
+bool forward_1400()
 {
-    if (backlaser.getOutput1())
+    float current_time = timer.read();
+    if (current_time <= 10)
     {
-        controller.setTargetTwist({60, 0, 0});
+        controller.setTargetTwist({100, 0, 0});
         return false;
     }
     else
@@ -239,10 +208,9 @@ bool forward_1700()
 }
 bool stop_20()
 {
-    float current_time = timer.read();
-    if (current_time < 10)
+    if (backlaser.getOutput1())
     {
-        stop();
+        controller.setTargetTwist({90, 0,0});
 #if USE_PROPELLER
         propeller.Start(-0.5);
 #endif
@@ -260,7 +228,7 @@ bool backward_500()
 {
     if (!backlaser.getOutput2())
     {
-        controller.setTargetTwist({-60.0, 0, 0});
+        controller.setTargetTwist({-70.0, 0, 0});
         printf("-40.0, 0, 0\n");
         return false;
     }
@@ -288,7 +256,7 @@ bool forward_500()
 {
     if (backlaser.getOutput1())
     {
-        controller.setTargetTwist({60, 0, 0});
+        controller.setTargetTwist({70, 0, 0});
         printf("40, 0, 0\n");
         return false;
     }
@@ -301,7 +269,7 @@ bool backward_750()
 {
     if (!backlaser.getOutput2())
     {
-        controller.setTargetTwist({-60, 0, 0});
+        controller.setTargetTwist({-100, 0, 0});
         printf("-40, 0, 0\n");
         return false;
     }
@@ -314,7 +282,7 @@ bool left_950()
 {
     if (rightlaser.getOutput())
     {
-        controller.setTargetTwist({0, 60, 0});
+        controller.setTargetTwist({0, 100, 0});
         printf("0, 40, 0");
         return false;
     }
@@ -326,7 +294,7 @@ bool left_950()
 bool rotate_90()
 {
     float current_time = timer.read();
-    if (current_time <= 3.2)
+    if (current_time <= 3.4)
     {
         controller.setTargetTwist({0, 0, -1.0});
         printf("0, 0, -1.0\n");
@@ -334,6 +302,15 @@ bool rotate_90()
     }
     else
     {
+        return true;
+    }
+}
+bool wait() {
+    float current_time = timer.read();
+    if (current_time < 10) {
+        stop();
+        return false;
+    } else {
         return true;
     }
 }
@@ -400,7 +377,7 @@ void update()
         currentMode = Mode::FORWARD_1700;
         break;
     case Mode::FORWARD_1700:
-        if (left_650())
+        if (forward_1400())
         {
             updateMode(Mode::STOP_20_1);
             currentMode = Mode::STOP_20_2;
@@ -458,6 +435,12 @@ void update()
     case Mode::ROTATE:
         if (rotate_90())
         {
+            updateMode(Mode::WAIT);
+            currentMode = Mode::WAIT;
+        }
+        break;
+    case Mode::WAIT:
+        if (wait()) {
             updateMode(Mode::RELEASE);
             currentMode = Mode::RELEASE;
         }
