@@ -8,14 +8,14 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "C:/Users/yukin_1/Documents/PlatformIO/Projects/RogiStandard-Driving/.pio/build/nucleo_f446re/**",
-                "C:/Users/yukin_1/Documents/PlatformIO/Projects/RogiStandard-Driving/src/**"
+                "~/Documents/PlatformIO/Projects/RogiStandard-Driving/.pio/build/nucleo_f446re/**",
+                "~/Documents/PlatformIO/Projects/RogiStandard-Driving/src/**"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "C:/Users/yukin_1/Documents/PlatformIO/Projects/RogiStandard-Driving/.pio/build/nucleo_f446re/**",
-                    "C:/Users/yukin_1/Documents/PlatformIO/Projects/RogiStandard-Driving/src/**"
+                    "~/Documents/PlatformIO/Projects/RogiStandard-Driving/.pio/build/nucleo_f446re/**",
+                    "~/Documents/PlatformIO/Projects/RogiStandard-Driving/src/**"
                 ]
             },
             "defines": [
@@ -80,10 +80,10 @@
             "cStandard": "gnu11",
             "cppStandard": "gnu++14",
             "forcedInclude": [
-                "C:/Users/yukin_1/Documents/PlatformIO/Projects/RogiStandard-Driving/.pio/build/nucleo_f446re/mbed_config.h",
+                "/home/taketori/Documents/PlatformIO/Projects/RogiStandard-Driving/.pio/build/nucleo_f446re/mbed_config.h",
                 ""
             ],
-            // "compilerPath": "/home/yukin_1/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-gcc",
+            "compilerPath": "/home/taketori/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-gcc",
             "compilerArgs": [
                 "-mcpu=cortex-m4",
                 "-mfloat-abi=softfp",

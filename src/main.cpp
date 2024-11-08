@@ -6,6 +6,7 @@
 #include "OdomWheel/Odometry.hpp"
 #include "OdomWheel/WheelController.hpp"
 #include "RogiLinkFlex/UartLink.hpp"
+#include "RogiLinkFlex/CommunicationBase.hpp"
 #include "Simulator/MotorSimulator.hpp"
 #include "pins.hpp"
 
@@ -56,21 +57,27 @@ MotorController motor3(dc3, encoder3);
 // WheelController<3> controller(config, {&motor1, &motor2, &motor3});
 
 UartLink pc(USBTX, USBRX, 9600);
-UartLinkSubscriber sub<float, float, float>(pc, 1);
+Subscriber sub<float, float, float>(pc, 1);
 
 Ticker t;
 
-void sub_callback(float _angle1, float _angle2, float _angle3) {
+void sub_callback(float _angle1, float _angle2, float _angle3)
+{
   motor1.setTargetSpeed((_angle1 - motor1.encoder.getRadians()) / 0.001);
   motor2.setTargetSpeed((_angle2 - motor1.encoder.getRadians()) / 0.001);
   motor3.setTargetSpeed((_angle3 - motor1.encoder.getRadians()) / 0.001);
-  t.attach([this]() {
-    motor1.stop();
-    motor2.stop();
-    motor3.stop();
+  t.attach(
+      [&]()
+      {
+        motor1.stop();
+        motor2.stop();
+        motor3.stop();
 
-    t.dettach();
-  })
+        t.dettach();
+      })
 }
 
-int main() { sub.set_callback(sub_callback); }
+int main()
+{
+  sub.set_callback(sub_callback);
+}
